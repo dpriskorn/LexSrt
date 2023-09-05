@@ -1,0 +1,2 @@
+class MissingInformationError(BaseException):
+    pass

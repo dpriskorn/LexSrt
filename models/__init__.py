@@ -7,7 +7,9 @@ from pandas import DataFrame
 from pydantic import BaseModel
 from srt import parse
 from wikibaseintegrator import WikibaseIntegrator
+from wikibaseintegrator.datatypes import Lexeme
 
+from models.from_lexeme_combinator import localized_glosses_from_all_senses
 from models.tokenized_sentence import TokenizedSentence
 from wikibaseintegrator.wbi_config import config as wbi_config
 
@@ -44,7 +46,7 @@ class LexSrt(BaseModel):
         self.get_srt_content_and_remove_commercial()
         self.get_spacy_tokens()
         # self.create_dataframes()
-        self.get_lexeme_ids()
+        self.get_lexemes_and_print_senses()
         self.print_output()
 
     def read_srt_file(self):
@@ -141,15 +143,14 @@ class LexSrt(BaseModel):
         # for ts in self.tokenized_sentences:
         #     print(ts)
 
-    def get_lexeme_ids(self):
+    def get_lexemes_and_print_senses(self):
         logger.debug("get_lexeme_ids: running")
         for ts in self.tokenized_sentences:
             ts.convert_tokens_to_lexemes()
             print(ts)
             print(f"lexemes: {ts.lexemes}")
             for lexeme in ts.get_wbi_lexemes():
+                lexeme: Lexeme
                 print(lexeme.get_entity_url())
+                print(localized_glosses_from_all_senses(lexeme=lexeme))
             exit()
-
-    def print_output(self):
-        pass
