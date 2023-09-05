@@ -193,7 +193,7 @@ class LexSrt(BaseModel):
 
     @property
     def count_tokens_above_minimum_length(self) -> int:
-        result = sum([sentence.number_of_tokens_longer_than_minimum_length for sentence in self.tokenized_sentences])
+        return sum([sentence.number_of_tokens_longer_than_minimum_length for sentence in self.tokenized_sentences])
 
     # def extract_lexemes_based_on_sentences(self):
     #     logger.debug("get_lexemes: running")
@@ -255,12 +255,15 @@ class LexSrt(BaseModel):
         if not match:
             match = self.match_as_verb(token=token)
         if not match:
+            match = self.match_as_adjective(token=token)
+        if not match:
             # raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
             logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
             input("Continue? (Enter/ctrl + c)")
 
     def match(self, token: Token) -> bool:
-        logger.info(f"Trying to match '{token.text}' with lexemes in Wikidata")
+        logger.info(f"Trying to match '{token.text}' using the spaCy lexical category "
+                    f"{token.pos_} with lexemes in Wikidata")
         lexemes = spacy_token_to_lexemes(token=token)
         if lexemes:
             logger.info(f"Match(es) found {lexemes}")
@@ -313,6 +316,16 @@ class LexSrt(BaseModel):
         else:
             return False
 
+    def match_as_adjective(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' as adjective with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_adjective=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to verb")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
     @property
     def number_of_lexemes_with_no_senses(self) -> int:
         count = 0
