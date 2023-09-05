@@ -17,12 +17,13 @@ class TokenizedSentence(BaseModel):
     def __str__(self) -> str:
         sentences = self.sentence.replace('\n', '')
         if self.tokens:
-            return f"Sentence '{sentences}' with {self.number_of_tokens} tokens: {', '.join(self.tokens)}"
+            return f"Sentence '{sentences}' with {self.number_of_tokens} tokens: {', '.join(self.get_tokens_as_text)}"
         else:
             return f"Sentence '{sentences}' with no tokens detected"
 
-    # def get_tokens_as_text(self):
-    #     return [token.text for token in self.tokens]
+    @property
+    def get_tokens_as_text(self) -> List[str]:
+        return [token.text for token in self.tokens]
 
     def convert_tokens_to_lexemes(self):
         """Can we get back multiple lexemes for a single token?"""

@@ -6,6 +6,7 @@ The code was improved to use WikibaseIntegrator for better error handling and st
 import logging
 
 import requests
+from functools import lru_cache
 from wikibaseintegrator.wbi_helpers import execute_sparql_query
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,8 @@ def escape_string(string):
     """
     return string.replace('\\', '\\\\').replace('"', r'\"')
 
+
+@lru_cache(maxsize=1048)
 def iso639_to_q(iso639):
     """Convert ISO 639 to Wikidata ID.
 
@@ -85,6 +88,8 @@ def iso639_to_q(iso639):
     else:
         return ""
 
+
+@lru_cache(maxsize=1048)
 def spacy_token_to_lexemes(token):
     """Identify Wikidata lexeme from spaCy token.
 
