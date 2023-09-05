@@ -100,7 +100,8 @@ def spacy_token_to_lexemes(token: Token = None,
                            lookup_proper_noun_as_noun: bool = False,
                            lookup_proper_noun_as_adjective: bool = False,
                            overwrite_as_noun: bool = False,
-                           overwrite_as_verb: bool = False):
+                           overwrite_as_verb: bool = False,
+                           overwrite_as_adjective: bool = False):
     """Identify Wikidata lexeme from spaCy token.
 
     Parameters
@@ -151,6 +152,8 @@ def spacy_token_to_lexemes(token: Token = None,
         token.pos_ = "NOUN"
     if overwrite_as_verb:
         token.pos_ = "VERB"
+    if overwrite_as_adjective:
+        token.pos_ = "ADJ"
     if token.pos_ in ['PUNCT', 'SYM', 'X']:
         logger.error(f"PoS '{token.pos_}' is a punctation, skipping")
         return []
