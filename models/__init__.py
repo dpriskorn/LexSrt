@@ -6,10 +6,14 @@ import spacy
 from pandas import DataFrame
 from pydantic import BaseModel
 from srt import parse
+from wikibaseintegrator import WikibaseIntegrator
 
 from models.tokenized_sentence import TokenizedSentence
+from wikibaseintegrator.wbi_config import config as wbi_config
 
 logger = logging.getLogger(__name__)
+wbi_config['USER_AGENT'] = 'LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)'
+wbi = WikibaseIntegrator()
 
 
 class LexSrt(BaseModel):
@@ -130,7 +134,7 @@ class LexSrt(BaseModel):
             tokens = [token for token in doc]
             # print(sentence, tokens)
             # exit()
-            self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=tokens))
+            self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=tokens, wbi=wbi))
 
         # debug
         # print(f"Number of sentences found: {len(self.tokenized_sentences)}")
@@ -143,6 +147,8 @@ class LexSrt(BaseModel):
             ts.convert_tokens_to_lexemes()
             print(ts)
             print(f"lexemes: {ts.lexemes}")
+            for lexeme in ts.get_wbi_lexemes():
+                print(lexeme.get_entity_url())
             exit()
 
     def print_output(self):
