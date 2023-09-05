@@ -4,7 +4,10 @@ The purpose of this script is to get all the senses for all the words in a SRT-f
 It uses SpaCy to tokenize each subtitle in the srt and looks up the corresponding lexeme in 
 Wikidata based on the detected position of speech and token representation.
 
-# Limitaitons
+The script encourages the user to contribute to Wikidata if 
+senses are completely missing on the matched lexemes.
+
+# Limitations
 * Hard-coded to English
 * No API
 
@@ -16,11 +19,15 @@ Clone the repository.
 
 You can fiddle with the configuration options in `config.py`
 
-# Example subtitle Ice Age
+# Examples
+## Ice Age with limit 8
 ![image](https://github.com/dpriskorn/LexSrt/assets/68460690/f07d14a4-45cb-45cb-a617-889604652639)
 
-The script encourages the user to contribute to Wikidata if 
-senses are completely missing.
+## Life of Brian limit 11
+matches:
+![image](https://github.com/dpriskorn/LexSrt/assets/68460690/78408744-0827-426c-837a-3e6fc1960336)
+match errors:
+![image](https://github.com/dpriskorn/LexSrt/assets/68460690/3c8b2f1f-645a-4502-8486-c5a9a0012d3c)
 
 # License
 GPLv3+ with the exeption of the code borrowed from Ordia, see the licens in the file.
