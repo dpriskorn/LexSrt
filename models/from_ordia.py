@@ -150,12 +150,7 @@ def spacy_token_to_lexemes(token):
     }}'''.format(language=language, lexical_category=lexical_category,
                  representation=representation, iso639=iso639)
 
-    # url = 'https://query.wikidata.org/sparql'
-    # params = {'query': query, 'format': 'json'}
     logger.debug("Looking up in Wikidata")
-    # response = requests.get(url, params=params, #headers=HEADERS
-                            #)
-    # data = response.json()
     from wikibaseintegrator.wbi_config import config as wbi_config
 
     wbi_config['USER_AGENT'] = 'LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)'
