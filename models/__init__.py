@@ -55,7 +55,6 @@ class LexSrt(BaseModel):
         self.read_srt_file()
         self.get_srt_content_and_remove_commercial()
         self.get_spacy_tokens()
-        self.count_tokens_above_minimum_length()
         self.extract_lexemes_based_on_tokens()
         self.get_unique_wbi_lexemes()
         self.print_all_unique_wbi_lexemes()
@@ -161,6 +160,15 @@ class LexSrt(BaseModel):
         except EmailNotValidError as e:
             return False
 
+    def filter_tokens(self, tokens):
+        """Filter the tokens to remove junk like emails"""
+        filtered_tokens = []
+        for token in tokens:
+            # Filter away emails
+            if not self.valid_email(token.text):
+                filtered_tokens.append(token)
+        return filtered_tokens
+
     def get_spacy_tokens(self):
         logger.debug("get_spacy_tokens: running")
         # Load a SpaCy language model (e.g., English)
@@ -168,25 +176,24 @@ class LexSrt(BaseModel):
 
         for sentence in self.srt_contents:
             sentence = self.clean_sentence(sentence)
-            if not self.valid_email(sentence):
-                doc = nlp(sentence)
-                tokens = [token for token in doc]
-                # print(sentence, tokens)
-                # exit()
-                self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=tokens, wbi=wbi))
-                for token in tokens:
-                    if len(token.text) > config.minimum_token_length:
-                        self.tokens_above_minimum_length.append(token)
+            doc = nlp(sentence)
+            tokens = [token for token in doc]
+            filtered_tokens = self.filter_tokens(tokens)
+            self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=filtered_tokens, wbi=wbi))
+            for token in filtered_tokens:
+                if len(token.text) > config.minimum_token_length:
+                    self.tokens_above_minimum_length.append(token)
 
         print(f"Found {len(self.tokenized_sentences)} subtitles with a total of {self.number_of_tokens_found} tokens")
+        print(f"Found {self.count_tokens_above_minimum_length} tokens longer than the minimum token lengh ({config.minimum_token_length})")
         # debug
         # print(f"Number of sentences found: {len(self.tokenized_sentences)}")
         # for ts in self.tokenized_sentences:
         #     print(ts)
 
-    def count_tokens_above_minimum_length(self):
+    @property
+    def count_tokens_above_minimum_length(self) -> int:
         result = sum([sentence.number_of_tokens_longer_than_minimum_length for sentence in self.tokenized_sentences])
-        print(f"Found {result} tokens longer than the minimum token lengh ({config.minimum_token_length})")
 
     # def extract_lexemes_based_on_sentences(self):
     #     logger.debug("get_lexemes: running")
