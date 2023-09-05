@@ -5,6 +5,7 @@ from typing import List
 import spacy
 from bs4 import BeautifulSoup
 from email_validator import validate_email, EmailNotValidError
+from pandas import DataFrame
 from pydantic import BaseModel
 from spacy.tokens import Token
 from srt import parse
@@ -39,18 +40,18 @@ class LexSrt(BaseModel):
     # remove duplicate tokens
     # filter tokens according to the minimum characters
     # find lexemes for each token
-    # output the list of values needed to find all the senses with WDQS
+    # output to dataframe
+    # export to csv
     """
 
     srt_lines: str = ""
     srt_contents: List[str] = list()
     tokenized_sentences: List[TokenizedSentence] = list()
     filename: str = ""
-    # lines_dataframe: DataFrame = DataFrame()
-    # words_dataframe: DataFrame = DataFrame()
     lexemes: List[str] = list()
     tokens_above_minimum_length: List[LexSrtToken] = list()
     unique_wbi_lexemes: List[LexemeEntity] = list()
+    lexeme_dataframe: DataFrame = DataFrame()
 
     class Config:
         arbitrary_types_allowed = True
@@ -64,6 +65,8 @@ class LexSrt(BaseModel):
         self.get_unique_wbi_lexemes()
         self.print_all_unique_wbi_lexemes()
         self.print_number_of_unique_lexemes_with_no_senses()
+        self.create_lexeme_dataframe()
+        self.write_to_csv()
 
     def read_srt_file(self):
         # Open and read the SRT file with a specific encoding (e.g., 'latin-1')
@@ -117,34 +120,31 @@ class LexSrt(BaseModel):
         # debug
         # print(self.srt_contents)
 
-    # def create_dataframes(self):
-    #     self.create_lines_dataframe()
-    #     self.create_word_dataframe()
-    #
-    # def create_lines_dataframe(self):
-    #     # Create a DataFrame from the list of strings
-    #     self.lines_dataframe = DataFrame({'Lines': self.srt_contents})
-    #
-    # def create_word_dataframe(self):
-    #     # Define a regular expression pattern to split text into words while removing punctuation
-    #     pattern = r'\b\w+\b'
-    #
-    #     # Split strings into words, remove punctuation, and convert to lowercase
-    #     words = []
-    #     for sentence in self.srt_contents:
-    #         words.extend(re.findall(pattern, sentence.lower()))
-    #
-    #     # Deduplicate cleaned words
-    #     unique_words = list(set(words))
-    #
-    #     # Filter out words with fewer than 5 characters
-    #     filtered_words = [word for word in unique_words if len(word) >= 5]
-    #
-    #     # Create a DataFrame
-    #     self.words_dataframe = DataFrame({'Words': filtered_words})
-    #
-    #     # debug
-    #     print(self.words_dataframe)
+    def create_lexeme_dataframe(self):
+        data = []
+
+        for lexeme in self.unique_wbi_lexemes:
+            data.append(
+                {
+                    "id": lexeme.id,
+                    "localized lemma": get_cleaned_localized_lemma(lexeme=lexeme),
+                    "localized senses": localized_glosses_as_text(lexeme=lexeme),
+                    "has at least one sense": bool(lexeme.senses),
+                    "url": lexeme.get_entity_url(),
+                }
+            )
+        df = DataFrame(data)
+        # Sort the DataFrame by the 'localized lemma' column in ascending order
+        df_sorted = df.sort_values(by='localized lemma')
+
+        # Optionally, reset the index to have consecutive row numbers
+        df_sorted.reset_index(drop=True, inplace=True)
+
+        # Create a DataFrame from the list of dictionaries
+        self.lexeme_dataframe = df_sorted
+
+        # debug
+        print(self.lexeme_dataframe)
 
     @staticmethod
     def remove_html_tags(text: str):
@@ -293,3 +293,7 @@ class LexSrt(BaseModel):
         print(
             f"{self.number_of_lexemes_with_no_senses} lexemes are missing at least one sense"
         )
+
+    def write_to_csv(self):
+        if not self.lexeme_dataframe.empty:
+            self.lexeme_dataframe.to_csv("lexemes.csv")

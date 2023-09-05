@@ -36,7 +36,7 @@ def localized_glosses_from_all_senses(lexeme: LexemeEntity) -> List[str]:
     if glosses:
         return glosses
     else:
-        return [f"No senses (please help add one here {lexeme.get_entity_url()})"]
+        return [f"No senses (help wanted)"]
 
 
 @validate_arguments(config=dict(arbitrary_types_allowed=True))
