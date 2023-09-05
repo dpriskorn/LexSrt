@@ -15,6 +15,7 @@ srt = "^3.5.3"
 requests = "^2.31.0"
 spacy = "^3.6.1"
 wikibaseintegrator = "^0.12.4"
+rich = "^13.5.2"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"

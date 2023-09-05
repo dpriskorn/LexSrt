@@ -2142,4 +2142,4 @@ notebooks = ["jupyter"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.13"
-content-hash = "12643456546b2388691e4128a8bac11cce11ca94044c9e0c3f0d54a68715adc1"
+content-hash = "0220780b318d9dc3cfc34a3ce0fc118498d38368740132eac82bc865b44f8164"

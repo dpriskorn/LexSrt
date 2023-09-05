@@ -1,10 +1,16 @@
+import logging
 from typing import List, Any
 
 from pydantic import BaseModel
+from spacy.tokens import Token
 from wikibaseintegrator import WikibaseIntegrator
 from wikibaseintegrator.datatypes import Lexeme
 
+import config
+from models.exceptions import MatchError
 from models.from_ordia import spacy_token_to_lexemes
+
+logger = logging.getLogger(__name__)
 
 
 class TokenizedSentence(BaseModel):
@@ -32,10 +38,59 @@ class TokenizedSentence(BaseModel):
         return [token.text for token in self.tokens]
 
     def convert_tokens_to_lexemes(self):
-        """Can we get back multiple lexemes for a single token?"""
+        """Convert tokens to lexemes if above minimum length"""
         for token in self.tokens:
-            lexemes = spacy_token_to_lexemes(token)
-            self.lexemes.extend(lexemes)
+            if len(token.text) > config.minimum_token_length:
+                match = self.match(token=token)
+                if not match:
+                    match = self.match_proper_noun_as_noun(token=token)
+                if not match:
+                    match = self.match_proper_noun_as_adjective(token=token)
+                if not match:
+                    raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
+                    # logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
+            else:
+                logger.debug(f"Discarded short token: {token.text}")
 
     def get_wbi_lexemes(self) -> List[Lexeme]:
         return [self.wbi.lexeme.get(entity_id=lexeme) for lexeme in self.lexemes]
+
+    @property
+    def number_of_tokens_longer_than_minimum_length(self) -> int:
+        count = 0
+        for token in self.tokens:
+            if len(token.text) > config.minimum_token_length:
+                count += 1
+        return count
+
+    def match(self, token: Token) -> bool:
+        logger.info(f"Trying to match '{token.text}' with lexemes in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes}")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    def match_proper_noun_as_noun(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' in as noun with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_noun=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    def match_proper_noun_as_adjective(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' in as adjective with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_adjective=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False

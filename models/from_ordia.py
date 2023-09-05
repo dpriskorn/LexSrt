@@ -4,10 +4,16 @@ License: Apache 2.0, see https://github.com/fnielsen/ordia/blob/master/LICENSE
 
 The code was improved to use WikibaseIntegrator for better error handling and standardization"""
 import logging
+from typing import Any
 
 import requests
 from functools import lru_cache
+
+from spacy.tokens import Token
 from wikibaseintegrator.wbi_helpers import execute_sparql_query
+
+import config
+from models.exceptions import MissingInformationError
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +96,10 @@ def iso639_to_q(iso639):
 
 
 @lru_cache(maxsize=1048)
-def spacy_token_to_lexemes(token):
+def spacy_token_to_lexemes(token: Token = None,
+                           lowercase: bool = False,
+                           lookup_proper_noun_as_noun: bool = False,
+                           lookup_proper_noun_as_adjective: bool = False):
     """Identify Wikidata lexeme from spaCy token.
 
     Parameters
@@ -128,19 +137,32 @@ def spacy_token_to_lexemes(token):
         "NUM": "Q63116",
         "PART": "Q184943",
         "PRON": "Q36224",
+        "PROPN": "Q147276",
         "SCONJ": "Q36484",
     }
-
+    if not token:
+        raise MissingInformationError()
+    if lookup_proper_noun_as_noun:
+        POSTAG_TO_Q["PROPN"] = "Q1084"
+    if lookup_proper_noun_as_adjective:
+        POSTAG_TO_Q["PROPN"] = "Q34698"
     if token.pos_ in ['PUNCT', 'SYM', 'X']:
+        logger.error(f"PoS '{token.pos_}' is a punctation, skipping")
         return []
 
     iso639 = token.lang_
     language = iso639_to_q(iso639)
-    representation = token.norm_
+    if lowercase:
+        representation = token.norm_.lower()
+    else:
+        representation = token.norm_
     if token.pos_ not in POSTAG_TO_Q:
+        logger.error(f"PoS '{token.pos_}' not supported, skipping")
         return []
     lexical_category = POSTAG_TO_Q[token.pos_]
-
+    logger.info(f"Trying to match token with the representation "
+                f"'{representation}' and lexical category "
+                f"'{lexical_category}' with Wikidata")
     query = '''
        SELECT DISTINCT ?lexeme {{
            ?lexeme dct:language wd:{language} ;

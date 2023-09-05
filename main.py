@@ -8,9 +8,10 @@ Limitations:
 """
 import logging
 
+import config
 from models import LexSrt
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=config.loglevel)
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
