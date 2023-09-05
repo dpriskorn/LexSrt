@@ -4,6 +4,7 @@ from typing import List
 
 import spacy
 from bs4 import BeautifulSoup
+from email_validator import validate_email, EmailNotValidError
 from pydantic import BaseModel
 from spacy.tokens import Token
 from srt import parse
@@ -142,20 +143,40 @@ class LexSrt(BaseModel):
         soup = BeautifulSoup(text, 'html.parser')
         return soup.get_text()
 
+    def remove_hyphens_not_understood_by_spacy(self, sentence):
+        return sentence.replace("--", "")
+
+    def clean_sentence(self, sentence):
+        sentence = self.remove_html_tags(sentence)
+        sentence = self.remove_hyphens_not_understood_by_spacy(sentence)
+        return sentence
+
+    def valid_email(self, sentence) -> bool:
+        try:
+            # Check that the email address is valid. Turn on check_deliverability
+            # for first-time validations like on account creation pages (but not
+            # login pages).
+            emailinfo = validate_email(sentence, check_deliverability=False)
+            return True
+        except EmailNotValidError as e:
+            return False
+
     def get_spacy_tokens(self):
         logger.debug("get_spacy_tokens: running")
         # Load a SpaCy language model (e.g., English)
         nlp = spacy.load("en_core_web_sm")
 
         for sentence in self.srt_contents:
-            doc = nlp(self.remove_html_tags(sentence))
-            tokens = [token for token in doc]
-            # print(sentence, tokens)
-            # exit()
-            self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=tokens, wbi=wbi))
-            for token in tokens:
-                if len(token.text) > config.minimum_token_length:
-                    self.tokens_above_minimum_length.append(token)
+            sentence = self.clean_sentence(sentence)
+            if not self.valid_email(sentence):
+                doc = nlp(sentence)
+                tokens = [token for token in doc]
+                # print(sentence, tokens)
+                # exit()
+                self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=tokens, wbi=wbi))
+                for token in tokens:
+                    if len(token.text) > config.minimum_token_length:
+                        self.tokens_above_minimum_length.append(token)
 
         print(f"Found {len(self.tokenized_sentences)} subtitles with a total of {self.number_of_tokens_found} tokens")
         # debug
@@ -181,9 +202,7 @@ class LexSrt(BaseModel):
         if self.tokens_above_minimum_length and not self.lexemes:
             # try deduplicating
             for token in list(set(self.tokens_above_minimum_length)):
-                lexemes = self.convert_token_to_lexeme(token=token)
-                if lexemes:
-                    self.lexemes.extend(lexemes)
+                self.convert_token_to_lexeme(token=token)
         print(f"Found {len(self.lexemes)} lexemes based on the tokens")
 
     # def get_lexemes_and_print_senses(self):
@@ -218,7 +237,7 @@ class LexSrt(BaseModel):
     def number_of_tokens_found(self) -> int:
         return sum([sentence.number_of_tokens for sentence in self.tokenized_sentences])
 
-    def convert_token_to_lexeme(self, token: Token):
+    def convert_token_to_lexeme(self, token: Token) -> None:
         match = self.match(token=token)
         if not match:
             match = self.match_proper_noun_as_noun(token=token)
@@ -226,6 +245,8 @@ class LexSrt(BaseModel):
             match = self.match_proper_noun_as_adjective(token=token)
         if not match:
             match = self.match_as_noun(token=token)
+        if not match:
+            match = self.match_as_verb(token=token)
         if not match:
             # raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
             logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
@@ -246,7 +267,7 @@ class LexSrt(BaseModel):
                     f"in Wikidata")
         lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_noun=True)
         if lexemes:
-            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to noun")
             self.lexemes.extend(lexemes)
             return True
         else:
@@ -268,7 +289,7 @@ class LexSrt(BaseModel):
                     f"in Wikidata")
         lexemes = spacy_token_to_lexemes(token=token, overwrite_as_noun=True)
         if lexemes:
-            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to noun")
             self.lexemes.extend(lexemes)
             return True
         else:
@@ -279,7 +300,7 @@ class LexSrt(BaseModel):
                     f"in Wikidata")
         lexemes = spacy_token_to_lexemes(token=token, overwrite_as_verb=True)
         if lexemes:
-            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to verb")
             self.lexemes.extend(lexemes)
             return True
         else:

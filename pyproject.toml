@@ -17,6 +17,7 @@ spacy = "^3.6.1"
 wikibaseintegrator = "^0.12.4"
 rich = "^13.5.2"
 bs4 = "^0.0.1"
+email-validator = "^2.0.0.post2"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.4"
