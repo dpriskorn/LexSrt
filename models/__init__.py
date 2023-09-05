@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from typing import List
 
 import spacy
+from bs4 import BeautifulSoup
 from pydantic import BaseModel
 from spacy.tokens import Token
 from srt import parse
@@ -25,10 +26,11 @@ class LexSrt(BaseModel):
     # pseudo code
     # accept srt on command line
     # parse srt
-    # parse into tokens
+    # parse into sentences with tokens
+    # extract all tokens
+    # remove duplicate tokens
+    # filter tokens according to the minimum characters
     # find lexemes for each token
-    # remove duplicate lexemes
-    # remove lexemes less than 5 characters
     # output the list of values needed to find all the senses with WDQS
     """
     srt_lines: str = ""
@@ -49,7 +51,7 @@ class LexSrt(BaseModel):
         self.get_srt_content_and_remove_commercial()
         self.get_spacy_tokens()
         self.count_tokens_above_minimum_length()
-        self.extract_lexemes()
+        self.extract_lexemes_based_on_sentences()
         self.get_lexemes_deduplicate_and_print_all()
 
     def read_srt_file(self):
@@ -129,13 +131,18 @@ class LexSrt(BaseModel):
     #     # debug
     #     print(self.words_dataframe)
 
+    def remove_html_tags(self, text: str):
+        # This function removes HTML tags from the given text.
+        soup = BeautifulSoup(text, 'html.parser')
+        return soup.get_text()
+
     def get_spacy_tokens(self):
         logger.debug("get_spacy_tokens: running")
         # Load a SpaCy language model (e.g., English)
         nlp = spacy.load("en_core_web_sm")
 
         for sentence in self.srt_contents:
-            doc = nlp(sentence)
+            doc = nlp(self.remove_html_tags(sentence))
             tokens = [token for token in doc]
             # print(sentence, tokens)
             # exit()
@@ -154,8 +161,7 @@ class LexSrt(BaseModel):
         result = sum([sentence.number_of_tokens_longer_than_minimum_length for sentence in self.tokenized_sentences])
         print(f"Found {result} tokens longer than the minimum token lengh ({config.minimum_token_length})")
 
-
-    def extract_lexemes(self):
+    def extract_lexemes_based_on_sentences(self):
         logger.debug("get_lexemes: running")
         if not self.lexemes:
             for ts in self.tokenized_sentences:
