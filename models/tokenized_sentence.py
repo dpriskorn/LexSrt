@@ -37,23 +37,23 @@ class TokenizedSentence(BaseModel):
     def get_tokens_as_text(self) -> List[str]:
         return [token.text for token in self.tokens]
 
-    def convert_tokens_to_lexemes(self):
-        """Convert tokens to lexemes if above minimum length"""
-        for token in self.tokens:
-            if len(token.text) > config.minimum_token_length:
-                match = self.match(token=token)
-                if not match:
-                    match = self.match_proper_noun_as_noun(token=token)
-                if not match:
-                    match = self.match_proper_noun_as_adjective(token=token)
-                if not match:
-                    raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
-                    # logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
-            else:
-                logger.debug(f"Discarded short token: {token.text}")
+    # def convert_tokens_to_lexemes(self):
+    #     """Convert tokens to lexemes if above minimum length"""
+    #     for token in self.tokens:
+    #         if len(token.text) > config.minimum_token_length:
+    #             match = self.match(token=token)
+    #             if not match:
+    #                 match = self.match_proper_noun_as_noun(token=token)
+    #             if not match:
+    #                 match = self.match_proper_noun_as_adjective(token=token)
+    #             if not match:
+    #                 raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
+    #                 # logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
+    #         else:
+    #             logger.debug(f"Discarded short token: {token.text}")
 
-    def get_wbi_lexemes(self) -> List[Lexeme]:
-        return [self.wbi.lexeme.get(entity_id=lexeme) for lexeme in self.lexemes]
+    # def get_wbi_lexemes(self) -> List[Lexeme]:
+    #     return [self.wbi.lexeme.get(entity_id=lexeme) for lexeme in self.lexemes]
 
     @property
     def number_of_tokens_longer_than_minimum_length(self) -> int:
@@ -63,34 +63,3 @@ class TokenizedSentence(BaseModel):
                 count += 1
         return count
 
-    def match(self, token: Token) -> bool:
-        logger.info(f"Trying to match '{token.text}' with lexemes in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes}")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_proper_noun_as_noun(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' in as noun with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_noun=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after lowercasing")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_proper_noun_as_adjective(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' in as adjective with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_adjective=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after lowercasing")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False

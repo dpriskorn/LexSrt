@@ -97,9 +97,10 @@ def iso639_to_q(iso639):
 
 @lru_cache(maxsize=1048)
 def spacy_token_to_lexemes(token: Token = None,
-                           lowercase: bool = False,
                            lookup_proper_noun_as_noun: bool = False,
-                           lookup_proper_noun_as_adjective: bool = False):
+                           lookup_proper_noun_as_adjective: bool = False,
+                           overwrite_as_noun: bool = False,
+                           overwrite_as_verb: bool = False):
     """Identify Wikidata lexeme from spaCy token.
 
     Parameters
@@ -146,16 +147,20 @@ def spacy_token_to_lexemes(token: Token = None,
         POSTAG_TO_Q["PROPN"] = "Q1084"
     if lookup_proper_noun_as_adjective:
         POSTAG_TO_Q["PROPN"] = "Q34698"
+    if overwrite_as_noun:
+        token.pos_ = "NOUN"
+    if overwrite_as_verb:
+        token.pos_ = "VERB"
     if token.pos_ in ['PUNCT', 'SYM', 'X']:
         logger.error(f"PoS '{token.pos_}' is a punctation, skipping")
         return []
 
     iso639 = token.lang_
     language = iso639_to_q(iso639)
-    if lowercase:
-        representation = token.norm_.lower()
-    else:
-        representation = token.norm_
+    # if lowercase:
+    #     representation = token.norm_.lower()
+    # else:
+    representation = token.norm_
     if token.pos_ not in POSTAG_TO_Q:
         logger.error(f"PoS '{token.pos_}' not supported, skipping")
         return []

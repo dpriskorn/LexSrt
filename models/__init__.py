@@ -8,11 +8,14 @@ from pydantic import BaseModel
 from spacy.tokens import Token
 from srt import parse
 from wikibaseintegrator import WikibaseIntegrator
+from wikibaseintegrator.entities import LexemeEntity
 from wikibaseintegrator.wbi_config import config as wbi_config
 
 import config
+from models.exceptions import MatchError
 from models.from_lexeme_combinator import localized_glosses_from_all_senses, get_cleaned_localized_lemma, \
     localized_glosses_as_text
+from models.from_ordia import spacy_token_to_lexemes
 from models.tokenized_sentence import TokenizedSentence
 
 logger = logging.getLogger(__name__)
@@ -41,6 +44,7 @@ class LexSrt(BaseModel):
     # words_dataframe: DataFrame = DataFrame()
     lexemes: List[str] = list()
     tokens_above_minimum_length: List[Token] = list()
+    unique_wbi_lexemes: List[LexemeEntity] = list()
 
     class Config:
         arbitrary_types_allowed = True
@@ -51,8 +55,10 @@ class LexSrt(BaseModel):
         self.get_srt_content_and_remove_commercial()
         self.get_spacy_tokens()
         self.count_tokens_above_minimum_length()
-        self.extract_lexemes_based_on_sentences()
-        self.get_lexemes_deduplicate_and_print_all()
+        self.extract_lexemes_based_on_tokens()
+        self.get_unique_wbi_lexemes()
+        self.print_all_unique_wbi_lexemes()
+        self.print_number_of_unique_lexemes_with_no_senses()
 
     def read_srt_file(self):
         # Open and read the SRT file with a specific encoding (e.g., 'latin-1')
@@ -161,11 +167,21 @@ class LexSrt(BaseModel):
         result = sum([sentence.number_of_tokens_longer_than_minimum_length for sentence in self.tokenized_sentences])
         print(f"Found {result} tokens longer than the minimum token lengh ({config.minimum_token_length})")
 
-    def extract_lexemes_based_on_sentences(self):
-        logger.debug("get_lexemes: running")
-        if not self.lexemes:
-            for ts in self.tokenized_sentences:
-                lexemes = ts.convert_tokens_to_lexemes()
+    # def extract_lexemes_based_on_sentences(self):
+    #     logger.debug("get_lexemes: running")
+    #     if not self.lexemes:
+    #         for ts in self.tokenized_sentences:
+    #             lexemes = ts.convert_tokens_to_lexemes()
+    #             if lexemes:
+    #                 self.lexemes.extend(lexemes)
+    #     print(f"Found {len(self.lexemes)} lexemes based on the tokens")
+
+    def extract_lexemes_based_on_tokens(self):
+        logger.debug("extract_lexemes_based_on_tokens: running")
+        if self.tokens_above_minimum_length and not self.lexemes:
+            # try deduplicating
+            for token in list(set(self.tokens_above_minimum_length)):
+                lexemes = self.convert_token_to_lexeme(token=token)
                 if lexemes:
                     self.lexemes.extend(lexemes)
         print(f"Found {len(self.lexemes)} lexemes based on the tokens")
@@ -183,17 +199,99 @@ class LexSrt(BaseModel):
     #                   f"\n More details: {lexeme.get_entity_url()}")
     #         exit()
 
-    def get_lexemes_deduplicate_and_print_all(self):
-        logger.debug("get_lexemes_deduplicate_and_print_all: running")
+    def get_unique_wbi_lexemes(self):
+        logger.debug("get_unique_wbi_lexemes: running")
         unique_lexemes = list(set(self.lexemes))
         print(f"Found {len(unique_lexemes)} unique lexemes")
         for lexeme in unique_lexemes:
             wbi_lexeme = wbi.lexeme.get(entity_id=lexeme)
+            self.unique_wbi_lexemes.append(wbi_lexeme)
+
+    def print_all_unique_wbi_lexemes(self):
+        logger.debug("print_all_unique_wbi_lexemes: running")
+        for wbi_lexeme in self.unique_wbi_lexemes:
             print(f"{get_cleaned_localized_lemma(lexeme=wbi_lexeme)}: "
                   f"{localized_glosses_as_text(lexeme=wbi_lexeme)}"
                   f"\n More details: {wbi_lexeme.get_entity_url()}")
-        exit()
 
     @property
     def number_of_tokens_found(self) -> int:
         return sum([sentence.number_of_tokens for sentence in self.tokenized_sentences])
+
+    def convert_token_to_lexeme(self, token: Token):
+        match = self.match(token=token)
+        if not match:
+            match = self.match_proper_noun_as_noun(token=token)
+        if not match:
+            match = self.match_proper_noun_as_adjective(token=token)
+        if not match:
+            match = self.match_as_noun(token=token)
+        if not match:
+            # raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
+            logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
+            input("Continue? (Enter/ctrl + c)")
+
+    def match(self, token: Token) -> bool:
+        logger.info(f"Trying to match '{token.text}' with lexemes in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes}")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    def match_proper_noun_as_noun(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' in as noun with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_noun=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    def match_proper_noun_as_adjective(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' as adjective with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_adjective=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    def match_as_noun(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' as noun with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_noun=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    def match_as_verb(self, token: Token):
+        logger.info(f"Trying to match '{token.text}' as verb with lexemes "
+                    f"in Wikidata")
+        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_verb=True)
+        if lexemes:
+            logger.info(f"Match(es) found {lexemes} after lowercasing")
+            self.lexemes.extend(lexemes)
+            return True
+        else:
+            return False
+
+    @property
+    def number_of_lexemes_with_no_senses(self) -> int:
+        count = 0
+        for lexeme in self.unique_wbi_lexemes:
+            if not lexeme.senses:
+                count += 1
+        return count
+
+    def print_number_of_unique_lexemes_with_no_senses(self):
+        print(f"{self.number_of_lexemes_with_no_senses} lexemes are missing at least one sense")
