@@ -1,22 +1,20 @@
 import logging
-from typing import List, Any
+from typing import List
 
 from pydantic import BaseModel
-from spacy.tokens import Token
 from wikibaseintegrator import WikibaseIntegrator
-from wikibaseintegrator.datatypes import Lexeme
+from wikibaseintegrator.entities import LexemeEntity
 
 import config
-from models.exceptions import MatchError
-from models.from_ordia import spacy_token_to_lexemes
+from models import LexSrtToken
 
 logger = logging.getLogger(__name__)
 
 
 class TokenizedSentence(BaseModel):
     sentence: str = ""
-    tokens: List[Any] = list()
-    lexemes: List[Any] = list()
+    tokens: List[LexSrtToken] = list()
+    lexemes: List[LexemeEntity] = list()
     wbi: WikibaseIntegrator = WikibaseIntegrator()
 
     class Config:
@@ -27,7 +25,7 @@ class TokenizedSentence(BaseModel):
         return len(self.tokens)
 
     def __str__(self) -> str:
-        sentences = self.sentence.replace('\n', '')
+        sentences = self.sentence.replace("\n", "")
         if self.tokens:
             return f"Sentence '{sentences}' with {self.number_of_tokens} tokens: {', '.join(self.get_tokens_as_text)}"
         else:
@@ -62,4 +60,3 @@ class TokenizedSentence(BaseModel):
             if len(token.text) > config.minimum_token_length:
                 count += 1
         return count
-

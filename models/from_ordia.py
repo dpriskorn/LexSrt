@@ -40,7 +40,7 @@ def escape_string(string):
     '\\\\\\"hello\\"'
 
     """
-    return string.replace('\\', '\\\\').replace('"', r'\"')
+    return string.replace("\\", "\\\\").replace('"', r"\"")
 
 
 @lru_cache(maxsize=1048)
@@ -77,31 +77,36 @@ def iso639_to_q(iso639):
     elif len(iso639) == 3:
         property = "wdt:P219"
     else:
-        raise ValueError('Wrong length of `iso639`')
+        raise ValueError("Wrong length of `iso639`")
 
     query = 'SELECT ?code WHERE {{ ?code {property} "{iso639}" }}'.format(
-        property=property, iso639=escape_string(iso639))
+        property=property, iso639=escape_string(iso639)
+    )
 
-    url = 'https://query.wikidata.org/sparql'
-    params = {'query': query, 'format': 'json'}
-    response = requests.get(url, params=params, #headers=HEADERS
-                            )
+    url = "https://query.wikidata.org/sparql"
+    params = {"query": query, "format": "json"}
+    response = requests.get(
+        url,
+        params=params,  # headers=HEADERS
+    )
     data = response.json()
 
-    bindings = data['results']['bindings']
+    bindings = data["results"]["bindings"]
     if bindings:
-        return bindings[0]['code']['value'][31:]
+        return bindings[0]["code"]["value"][31:]
     else:
         return ""
 
 
 @lru_cache(maxsize=1048)
-def spacy_token_to_lexemes(token: Token = None,
-                           lookup_proper_noun_as_noun: bool = False,
-                           lookup_proper_noun_as_adjective: bool = False,
-                           overwrite_as_noun: bool = False,
-                           overwrite_as_verb: bool = False,
-                           overwrite_as_adjective: bool = False):
+def spacy_token_to_lexemes(
+    token: Token = None,
+    lookup_proper_noun_as_noun: bool = False,
+    lookup_proper_noun_as_adjective: bool = False,
+    overwrite_as_noun: bool = False,
+    overwrite_as_verb: bool = False,
+    overwrite_as_adjective: bool = False,
+):
     """Identify Wikidata lexeme from spaCy token.
 
     Parameters
@@ -131,7 +136,6 @@ def spacy_token_to_lexemes(token: Token = None,
         "NOUN": "Q1084",
         "PROPB": "Q147276",
         "VERB": "Q24905",
-
         "ADP": "Q134316",
         "AUX": "Q24905",
         "CCONJ": "Q36484",
@@ -154,7 +158,7 @@ def spacy_token_to_lexemes(token: Token = None,
         token.pos_ = "VERB"
     if overwrite_as_adjective:
         token.pos_ = "ADJ"
-    if token.pos_ in ['PUNCT', 'SYM', 'X']:
+    if token.pos_ in ["PUNCT", "SYM", "X"]:
         logger.error(f"PoS '{token.pos_}' is a punctation, skipping")
         return []
 
@@ -168,26 +172,32 @@ def spacy_token_to_lexemes(token: Token = None,
         logger.error(f"PoS '{token.pos_}' not supported, skipping")
         return []
     lexical_category = POSTAG_TO_Q[token.pos_]
-    logger.info(f"Trying to match token with the representation "
-                f"'{representation}' and lexical category "
-                f"'{lexical_category}' with Wikidata")
-    query = '''
+    logger.info(
+        f"Trying to match token with the representation "
+        f"'{representation}' and lexical category "
+        f"'{lexical_category}' with Wikidata"
+    )
+    query = """
        SELECT DISTINCT ?lexeme {{
            ?lexeme dct:language wd:{language} ;
             wikibase:lexicalCategory / wdt:P279* wd:{lexical_category} ;
             ontolex:lexicalForm / ontolex:representation
                 "{representation}"@{iso639} .
-    }}'''.format(language=language, lexical_category=lexical_category,
-                 representation=representation, iso639=iso639)
+    }}""".format(
+        language=language,
+        lexical_category=lexical_category,
+        representation=representation,
+        iso639=iso639,
+    )
 
     logger.debug("Looking up in Wikidata")
     from wikibaseintegrator.wbi_config import config as wbi_config
 
-    wbi_config['USER_AGENT'] = 'LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)'
+    wbi_config["USER_AGENT"] = "LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)"
     data = execute_sparql_query(query=query)
-    bindings = data['results']['bindings']
+    bindings = data["results"]["bindings"]
     if bindings:
-        lexemes = [binding['lexeme']['value'][31:] for binding in bindings]
+        lexemes = [binding["lexeme"]["value"][31:] for binding in bindings]
         return lexemes
     else:
         return []

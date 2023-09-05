@@ -14,7 +14,7 @@ from models import LexSrt
 logging.basicConfig(level=config.loglevel)
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger.info("Starting")
     ls = LexSrt()
     ls.start()

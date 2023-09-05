@@ -14,13 +14,17 @@ from wikibaseintegrator.wbi_config import config as wbi_config
 
 import config
 from models.exceptions import MatchError
-from models.from_lexeme_combinator import localized_glosses_from_all_senses, get_cleaned_localized_lemma, \
-    localized_glosses_as_text
+from models.from_lexeme_combinator import (
+    localized_glosses_from_all_senses,
+    get_cleaned_localized_lemma,
+    localized_glosses_as_text,
+)
 from models.from_ordia import spacy_token_to_lexemes
+from models.token import LexSrtToken
 from models.tokenized_sentence import TokenizedSentence
 
 logger = logging.getLogger(__name__)
-wbi_config['USER_AGENT'] = 'LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)'
+wbi_config["USER_AGENT"] = "LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)"
 wbi = WikibaseIntegrator()
 
 
@@ -37,6 +41,7 @@ class LexSrt(BaseModel):
     # find lexemes for each token
     # output the list of values needed to find all the senses with WDQS
     """
+
     srt_lines: str = ""
     srt_contents: List[str] = list()
     tokenized_sentences: List[TokenizedSentence] = list()
@@ -44,7 +49,7 @@ class LexSrt(BaseModel):
     # lines_dataframe: DataFrame = DataFrame()
     # words_dataframe: DataFrame = DataFrame()
     lexemes: List[str] = list()
-    tokens_above_minimum_length: List[Token] = list()
+    tokens_above_minimum_length: List[LexSrtToken] = list()
     unique_wbi_lexemes: List[LexemeEntity] = list()
 
     class Config:
@@ -63,13 +68,15 @@ class LexSrt(BaseModel):
     def read_srt_file(self):
         # Open and read the SRT file with a specific encoding (e.g., 'latin-1')
         try:
-            with open(self.filename, 'r', encoding='latin-1') as file:
+            with open(self.filename, "r", encoding="latin-1") as file:
                 self.srt_lines = file.read()
         except UnicodeDecodeError:
-            print(f"Failed to decode the file using 'latin-1' encoding. Trying 'utf-8'...")
+            print(
+                f"Failed to decode the file using 'latin-1' encoding. Trying 'utf-8'..."
+            )
 
             # If 'latin-1' doesn't work, try 'utf-8'
-            with open(self.filename, 'r', encoding='utf-8') as file:
+            with open(self.filename, "r", encoding="utf-8") as file:
                 self.srt_lines = file.read()
 
         # debug
@@ -79,8 +86,10 @@ class LexSrt(BaseModel):
         #     print(self.srt_lines)
 
     def setup_argparse_and_get_filename(self):
-        parser = ArgumentParser(description="Read and process SRT files from the command line.")
-        parser.add_argument('-i', '--input', required=True, help="Input SRT file name")
+        parser = ArgumentParser(
+            description="Read and process SRT files from the command line."
+        )
+        parser.add_argument("-i", "--input", required=True, help="Input SRT file name")
         args = parser.parse_args()
 
         self.filename = args.input
@@ -106,7 +115,7 @@ class LexSrt(BaseModel):
             self.srt_contents = self.srt_contents[:-2]
 
         # debug
-        #print(self.srt_contents)
+        # print(self.srt_contents)
 
     # def create_dataframes(self):
     #     self.create_lines_dataframe()
@@ -137,12 +146,14 @@ class LexSrt(BaseModel):
     #     # debug
     #     print(self.words_dataframe)
 
-    def remove_html_tags(self, text: str):
+    @staticmethod
+    def remove_html_tags(text: str):
         # This function removes HTML tags from the given text.
-        soup = BeautifulSoup(text, 'html.parser')
+        soup = BeautifulSoup(text, "html.parser")
         return soup.get_text()
 
-    def remove_hyphens_not_understood_by_spacy(self, sentence):
+    @staticmethod
+    def remove_hyphens_not_understood_by_spacy(sentence):
         return sentence.replace("--", "")
 
     def clean_sentence(self, sentence):
@@ -150,14 +161,15 @@ class LexSrt(BaseModel):
         sentence = self.remove_hyphens_not_understood_by_spacy(sentence)
         return sentence
 
-    def valid_email(self, sentence) -> bool:
+    @staticmethod
+    def valid_email(sentence) -> bool:
         try:
             # Check that the email address is valid. Turn on check_deliverability
             # for first-time validations like on account creation pages (but not
             # login pages).
-            emailinfo = validate_email(sentence, check_deliverability=False)
+            validate_email(sentence, check_deliverability=False)
             return True
-        except EmailNotValidError as e:
+        except EmailNotValidError:
             return False
 
     def filter_tokens(self, tokens):
@@ -169,6 +181,10 @@ class LexSrt(BaseModel):
                 filtered_tokens.append(token)
         return filtered_tokens
 
+    @staticmethod
+    def convert_to_lexsrttoken(tokens: List[Token]) -> List[LexSrtToken]:
+        return [LexSrtToken(spacy_token=token) for token in tokens]
+
     def get_spacy_tokens(self):
         logger.debug("get_spacy_tokens: running")
         # Load a SpaCy language model (e.g., English)
@@ -179,13 +195,24 @@ class LexSrt(BaseModel):
             doc = nlp(sentence)
             tokens = [token for token in doc]
             filtered_tokens = self.filter_tokens(tokens)
-            self.tokenized_sentences.append(TokenizedSentence(sentence=sentence, tokens=filtered_tokens, wbi=wbi))
-            for token in filtered_tokens:
+            lexsrttokens = self.convert_to_lexsrttoken(filtered_tokens)
+            self.tokenized_sentences.append(
+                TokenizedSentence(
+                    sentence=sentence,
+                    tokens=lexsrttokens,
+                    wbi=wbi,
+                )
+            )
+            for token in lexsrttokens:
                 if len(token.text) > config.minimum_token_length:
                     self.tokens_above_minimum_length.append(token)
 
-        print(f"Found {len(self.tokenized_sentences)} subtitles with a total of {self.number_of_tokens_found} tokens")
-        print(f"Found {self.count_tokens_above_minimum_length} tokens longer than the minimum token lengh ({config.minimum_token_length})")
+        print(
+            f"Found {len(self.tokenized_sentences)} subtitles with a total of {self.number_of_tokens_found} tokens"
+        )
+        print(
+            f"Found {self.count_tokens_above_minimum_length} tokens longer than the minimum token lengh ({config.minimum_token_length})"
+        )
         # debug
         # print(f"Number of sentences found: {len(self.tokenized_sentences)}")
         # for ts in self.tokenized_sentences:
@@ -193,7 +220,12 @@ class LexSrt(BaseModel):
 
     @property
     def count_tokens_above_minimum_length(self) -> int:
-        return sum([sentence.number_of_tokens_longer_than_minimum_length for sentence in self.tokenized_sentences])
+        return sum(
+            [
+                sentence.number_of_tokens_longer_than_minimum_length
+                for sentence in self.tokenized_sentences
+            ]
+        )
 
     # def extract_lexemes_based_on_sentences(self):
     #     logger.debug("get_lexemes: running")
@@ -204,12 +236,15 @@ class LexSrt(BaseModel):
     #                 self.lexemes.extend(lexemes)
     #     print(f"Found {len(self.lexemes)} lexemes based on the tokens")
 
+    # noinspection PyTypeChecker
     def extract_lexemes_based_on_tokens(self):
         logger.debug("extract_lexemes_based_on_tokens: running")
         if self.tokens_above_minimum_length and not self.lexemes:
             # try deduplicating
             for token in list(set(self.tokens_above_minimum_length)):
-                self.convert_token_to_lexeme(token=token)
+                token.convert_token_to_lexeme()
+                if token.lexemes:
+                    self.lexemes.extend(token.lexemes)
         print(f"Found {len(self.lexemes)} lexemes based on the tokens")
 
     # def get_lexemes_and_print_senses(self):
@@ -236,96 +271,16 @@ class LexSrt(BaseModel):
     def print_all_unique_wbi_lexemes(self):
         logger.debug("print_all_unique_wbi_lexemes: running")
         for wbi_lexeme in self.unique_wbi_lexemes:
-            print(f"{get_cleaned_localized_lemma(lexeme=wbi_lexeme)}: "
-                  f"{localized_glosses_as_text(lexeme=wbi_lexeme)}"
-                  f"\n More details: {wbi_lexeme.get_entity_url()}")
+            print(
+                f"{get_cleaned_localized_lemma(lexeme=wbi_lexeme)}: "
+                f"{localized_glosses_as_text(lexeme=wbi_lexeme)}"
+                f"\n More details: {wbi_lexeme.get_entity_url()}"
+            )
 
     @property
     def number_of_tokens_found(self) -> int:
         return sum([sentence.number_of_tokens for sentence in self.tokenized_sentences])
 
-    def convert_token_to_lexeme(self, token: Token) -> None:
-        match = self.match(token=token)
-        if not match:
-            match = self.match_proper_noun_as_noun(token=token)
-        if not match:
-            match = self.match_proper_noun_as_adjective(token=token)
-        if not match:
-            match = self.match_as_noun(token=token)
-        if not match:
-            match = self.match_as_verb(token=token)
-        if not match:
-            match = self.match_as_adjective(token=token)
-        if not match:
-            # raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
-            logger.error(f"MatchError: See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
-            input("Continue? (Enter/ctrl + c)")
-
-    def match(self, token: Token) -> bool:
-        logger.info(f"Trying to match '{token.text}' using the spaCy lexical category "
-                    f"{token.pos_} with lexemes in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes}")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_proper_noun_as_noun(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' in as noun with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_noun=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to noun")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_proper_noun_as_adjective(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' as adjective with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_adjective=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after lowercasing")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_as_noun(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' as noun with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_noun=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to noun")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_as_verb(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' as verb with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_verb=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to verb")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
-
-    def match_as_adjective(self, token: Token):
-        logger.info(f"Trying to match '{token.text}' as adjective with lexemes "
-                    f"in Wikidata")
-        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_adjective=True)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes} after forcing the lexical category to verb")
-            self.lexemes.extend(lexemes)
-            return True
-        else:
-            return False
     @property
     def number_of_lexemes_with_no_senses(self) -> int:
         count = 0
@@ -335,4 +290,6 @@ class LexSrt(BaseModel):
         return count
 
     def print_number_of_unique_lexemes_with_no_senses(self):
-        print(f"{self.number_of_lexemes_with_no_senses} lexemes are missing at least one sense")
+        print(
+            f"{self.number_of_lexemes_with_no_senses} lexemes are missing at least one sense"
+        )
