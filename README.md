@@ -11,7 +11,7 @@ Clone the repository.
 `python main.py -i path-to-srt.srt`
 
 # Example subtitle Ice Age
-![image](https://github.com/dpriskorn/LexSrt/assets/68460690/120adc0d-dded-4200-a40c-95b85a4e2739)
+![image](https://github.com/dpriskorn/LexSrt/assets/68460690/f07d14a4-45cb-45cb-a617-889604652639)
 
 The script encourages the user to contribute to Wikidata if 
 senses are completely missing.
