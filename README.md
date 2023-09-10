@@ -14,6 +14,10 @@ senses are completely missing on the matched lexemes.
 # Installation
 Clone the repository.
 
+## Recommended models
+These models are recommended over the standard spaCy ones in https://spacy.io/models
+* sv: https://github.com/Kungbib/swedish-spacy
+
 # Use
 `python main.py -i path-to-srt.srt`
 
