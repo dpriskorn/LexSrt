@@ -4,3 +4,7 @@ class MissingInformationError(BaseException):
 
 class MatchError(BaseException):
     pass
+
+
+class LanguageCodeError(BaseException):
+    pass

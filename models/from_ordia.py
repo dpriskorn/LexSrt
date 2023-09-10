@@ -4,15 +4,12 @@ License: Apache 2.0, see https://github.com/fnielsen/ordia/blob/master/LICENSE
 
 The code was improved to use WikibaseIntegrator for better error handling and standardization"""
 import logging
-from typing import Any
-
-import requests
 from functools import lru_cache
 
+import requests
 from spacy.tokens import Token
 from wikibaseintegrator.wbi_helpers import execute_sparql_query
 
-import config
 from models.exceptions import MissingInformationError
 
 logger = logging.getLogger(__name__)
@@ -163,7 +160,9 @@ def spacy_token_to_lexemes(
         return []
 
     iso639 = token.lang_
+    logger.info(f"Detected iso639 lanuage: {iso639}")
     language = iso639_to_q(iso639)
+    logger.debug(f"Matched language to the following QID: {language}")
     # if lowercase:
     #     representation = token.norm_.lower()
     # else:

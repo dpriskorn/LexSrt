@@ -1,4 +1,5 @@
 import logging
+import urllib
 from typing import List
 
 from pydantic import BaseModel
@@ -13,6 +14,7 @@ logger = logging.getLogger(__name__)
 class LexSrtToken(BaseModel):
     spacy_token: Token
     lexemes: List[LexemeEntity] = list()
+    match_error: bool = False
 
     class Config:
         arbitrary_types_allowed = True
@@ -49,11 +51,12 @@ class LexSrtToken(BaseModel):
         if not match:
             match = self.match_as_adjective(token=self.spacy_token)
         if not match:
+            quoted_token_representation = urllib.parse.quote(self.spacy_token.norm_.lower())
             # raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
             logger.error(
-                f"MatchError: See https://ordia.toolforge.org/search?q={self.spacy_token.norm_.lower()}"
+                f"MatchError: See https://ordia.toolforge.org/search?q={quoted_token_representation}"
             )
-            input("Continue? (Enter/ctrl + c)")
+            self.match_error = True
 
     def match(self, token: Token) -> bool:
         logger.info(
