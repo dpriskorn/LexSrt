@@ -355,7 +355,7 @@ class LexSrt(BaseModel):
         if not self.lexeme_dataframe.empty:
             self.lexeme_dataframe.to_csv("lexemes.csv")
         if not self.match_error_dataframe.empty:
-            self.lexeme_dataframe.to_csv("match_errors.csv")
+            self.match_error_dataframe.to_csv("match_errors.csv")
 
     @property
     def tokens_with_match_error(self) -> List[LexSrtToken]:
