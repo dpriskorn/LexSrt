@@ -51,6 +51,7 @@ class LexSrt(BaseModel):
     match_error_dataframe: DataFrame = DataFrame()
     language_code: str = ""
     spacy_model: str = ""
+    encoding: str = "utf-8"
 
     class Config:
         arbitrary_types_allowed = True
@@ -76,29 +77,21 @@ class LexSrt(BaseModel):
             )
 
     def read_srt_file(self):
-        # Open and read the SRT file with a specific encoding (e.g., 'latin-1')
+        """Open and read the SRT file with a specific encoding (e.g., 'latin-1')"""
         try:
-            with open(self.filename, encoding="latin-1") as file:
+            with open(self.filename, encoding=self.encoding) as file:
                 self.srt_lines = file.read()
         except UnicodeDecodeError:
             print(
-                "Failed to decode the file using 'latin-1' encoding. Trying 'utf-8'..."
+                f"Failed to decode the file using '{self.encoding}' encoding. "
+                f"Try adding --encoding 'latin-1' to the command line"
             )
-
-            # If 'latin-1' doesn't work, try 'utf-8'
-            with open(self.filename, encoding="utf-8") as file:
-                self.srt_lines = file.read()
-
-        # debug
-        # if self.srt_lines is not None:
-        #     # Process the SRT content here
-        #     # You can print it or perform any other actions as needed
-        #     print(self.srt_lines)
 
     def setup_argparse_and_get_filename(self):
         parser = ArgumentParser(
             description="Read and process SRT files from the command line."
         )
+        parser.add_argument("--file-encoding", required=False, help="Force a certain file encoding of the SRT file, e.g. 'latin-1'", default="utf-8")
         parser.add_argument("-i", "--input", required=True, help="Input SRT file name")
         parser.add_argument(
             "-l", "--lang", required=True, help="Wikimedia supported language code"
@@ -114,6 +107,7 @@ class LexSrt(BaseModel):
         self.filename = args.input
         self.language_code = args.lang
         self.spacy_model = args.spacy_model
+        self.encoding = args.file_encoding
 
     def get_srt_content_and_remove_commercial(self):
         """Get the contents as a list of strings"""
