@@ -4,9 +4,9 @@ from typing import List
 
 from pydantic import BaseModel
 from spacy.tokens import Token
-from wikibaseintegrator.entities import LexemeEntity
+from wikibaseintegrator.entities import LexemeEntity  # type: ignore
 
-from models import spacy_token_to_lexemes
+from models.from_ordia import spacy_token_to_lexemes
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,9 @@ class LexSrtToken(BaseModel):
         if not match:
             match = self.match_as_adjective(token=self.spacy_token)
         if not match:
-            quoted_token_representation = urllib.parse.quote(self.spacy_token.norm_.lower())
+            quoted_token_representation = urllib.parse.quote(
+                self.spacy_token.norm_.lower()
+            )
             # raise MatchError(f"See https://ordia.toolforge.org/search?q={token.norm_.lower()}")
             logger.error(
                 f"MatchError: See https://ordia.toolforge.org/search?q={quoted_token_representation}"

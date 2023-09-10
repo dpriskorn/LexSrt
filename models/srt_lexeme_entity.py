@@ -2,14 +2,13 @@ from typing import List
 
 from pydantic import BaseModel
 from pydantic.v1 import validate_arguments
-from wikibaseintegrator.entities import LexemeEntity
-from wikibaseintegrator.models import Sense
+from wikibaseintegrator.entities import LexemeEntity  # type: ignore
+from wikibaseintegrator.models import Sense  # type: ignore
 
-import config
-from models.exceptions import MissingInformationError
 
 class SrtLexemeEntity(BaseModel):
     """This code is adapted from LexemeCombinator"""
+
     lexeme: LexemeEntity
     language_code: str
 
@@ -38,11 +37,11 @@ class SrtLexemeEntity(BaseModel):
         if glosses:
             return glosses
         else:
-            return [f"No senses (help wanted)"]
+            return ["No senses (help wanted)"]
 
     def localized_glosses_as_text(self) -> str:
         glosses = self.__localized_glosses_from_all_senses__()
         if glosses:
             return " | ".join(glosses)
         else:
-            return f"No senses (please help add one)"
+            return "No senses (please help add one)"
