@@ -1,26 +1,22 @@
 import logging
+import urllib
 from argparse import ArgumentParser
 from typing import List
 
 import spacy
 from bs4 import BeautifulSoup
-from email_validator import validate_email, EmailNotValidError
+from email_validator import EmailNotValidError, validate_email
 from pandas import DataFrame
 from pydantic import BaseModel
 from spacy.tokens import Token
-from srt import parse
-from wikibaseintegrator import WikibaseIntegrator
-from wikibaseintegrator.entities import LexemeEntity
-from wikibaseintegrator.wbi_config import config as wbi_config
+from srt import parse  # type: ignore
+from wikibaseintegrator import WikibaseIntegrator  # type: ignore
+from wikibaseintegrator.entities import LexemeEntity  # type: ignore
+from wikibaseintegrator.wbi_config import config as wbi_config  # type: ignore
 
 import config
-from models.exceptions import MatchError
-from models.from_lexeme_combinator import (
-    localized_glosses_from_all_senses,
-    get_cleaned_localized_lemma,
-    localized_glosses_as_text,
-)
-from models.from_ordia import spacy_token_to_lexemes
+from models.exceptions import LanguageCodeError
+from models.srt_lexeme_entity import SrtLexemeEntity
 from models.token import LexSrtToken
 from models.tokenized_sentence import TokenizedSentence
 
@@ -52,12 +48,16 @@ class LexSrt(BaseModel):
     tokens_above_minimum_length: List[LexSrtToken] = list()
     unique_wbi_lexemes: List[LexemeEntity] = list()
     lexeme_dataframe: DataFrame = DataFrame()
+    match_error_dataframe: DataFrame = DataFrame()
+    language_code: str = ""
+    spacy_model: str = ""
 
     class Config:
         arbitrary_types_allowed = True
 
     def start(self):
         self.setup_argparse_and_get_filename()
+        self.check_language_code()
         self.read_srt_file()
         self.get_srt_content_and_remove_commercial()
         self.get_spacy_tokens()
@@ -66,20 +66,27 @@ class LexSrt(BaseModel):
         self.print_all_unique_wbi_lexemes()
         self.print_number_of_unique_lexemes_with_no_senses()
         self.create_lexeme_dataframe()
+        self.create_match_error_dataframe()
         self.write_to_csv()
+
+    def check_language_code(self):
+        if not 2 <= len(self.language_code) <= 3:
+            raise LanguageCodeError(
+                "The language code was not a supported length of 2-3 characters"
+            )
 
     def read_srt_file(self):
         # Open and read the SRT file with a specific encoding (e.g., 'latin-1')
         try:
-            with open(self.filename, "r", encoding="latin-1") as file:
+            with open(self.filename, encoding="latin-1") as file:
                 self.srt_lines = file.read()
         except UnicodeDecodeError:
             print(
-                f"Failed to decode the file using 'latin-1' encoding. Trying 'utf-8'..."
+                "Failed to decode the file using 'latin-1' encoding. Trying 'utf-8'..."
             )
 
             # If 'latin-1' doesn't work, try 'utf-8'
-            with open(self.filename, "r", encoding="utf-8") as file:
+            with open(self.filename, encoding="utf-8") as file:
                 self.srt_lines = file.read()
 
         # debug
@@ -93,9 +100,20 @@ class LexSrt(BaseModel):
             description="Read and process SRT files from the command line."
         )
         parser.add_argument("-i", "--input", required=True, help="Input SRT file name")
+        parser.add_argument(
+            "-l", "--lang", required=True, help="Wikimedia supported language code"
+        )
+        parser.add_argument(
+            "-m",
+            "--spacy_model",
+            required=True,
+            help="spaCy NLP language model, e.g. 'en_core_web_sm'",
+        )
         args = parser.parse_args()
 
         self.filename = args.input
+        self.language_code = args.lang
+        self.spacy_model = args.spacy_model
 
     def get_srt_content_and_remove_commercial(self):
         """Get the contents as a list of strings"""
@@ -124,18 +142,21 @@ class LexSrt(BaseModel):
         data = []
 
         for lexeme in self.unique_wbi_lexemes:
+            srt_lexeme = SrtLexemeEntity(
+                lexeme=lexeme, language_code=self.language_code
+            )
             data.append(
                 {
                     "id": lexeme.id,
-                    "localized lemma": get_cleaned_localized_lemma(lexeme=lexeme),
-                    "localized senses": localized_glosses_as_text(lexeme=lexeme),
+                    "localized lemma": srt_lexeme.get_cleaned_localized_lemma(),
+                    "localized senses": srt_lexeme.localized_glosses_as_text(),
                     "has at least one sense": bool(lexeme.senses),
                     "url": lexeme.get_entity_url(),
                 }
             )
         df = DataFrame(data)
         # Sort the DataFrame by the 'localized lemma' column in ascending order
-        df_sorted = df.sort_values(by='localized lemma')
+        df_sorted = df.sort_values(by="localized lemma")
 
         # Optionally, reset the index to have consecutive row numbers
         df_sorted.reset_index(drop=True, inplace=True)
@@ -145,6 +166,33 @@ class LexSrt(BaseModel):
 
         # debug
         print(self.lexeme_dataframe)
+
+    def create_match_error_dataframe(self):
+        data = []
+
+        for token in self.tokens_with_match_error:
+            quoted_token_representation = urllib.parse.quote(
+                token.spacy_token.norm_.lower()
+            )
+            data.append(
+                {
+                    "text": token.text,
+                    "ordia url": f"https://ordia.toolforge.org/search?q={quoted_token_representation}",
+                    "google url": f"https://google.com?q={quoted_token_representation}",
+                }
+            )
+        df = DataFrame(data)
+        # Sort the DataFrame by the 'localized lemma' column in ascending order
+        df_sorted = df.sort_values(by="text")
+
+        # Optionally, reset the index to have consecutive row numbers
+        df_sorted.reset_index(drop=True, inplace=True)
+
+        # Create a DataFrame from the list of dictionaries
+        self.match_error_dataframe = df_sorted
+
+        # debug
+        print(self.match_error_dataframe)
 
     @staticmethod
     def remove_html_tags(text: str):
@@ -187,8 +235,9 @@ class LexSrt(BaseModel):
 
     def get_spacy_tokens(self):
         logger.debug("get_spacy_tokens: running")
+        print("Tokenizing all subtitle sentences")
         # Load a SpaCy language model (e.g., English)
-        nlp = spacy.load("en_core_web_sm")
+        nlp = spacy.load(self.spacy_model)
 
         for sentence in self.srt_contents:
             sentence = self.clean_sentence(sentence)
@@ -208,10 +257,13 @@ class LexSrt(BaseModel):
                     self.tokens_above_minimum_length.append(token)
 
         print(
-            f"Found {len(self.tokenized_sentences)} subtitles with a total of {self.number_of_tokens_found} tokens"
+            f"Found {len(self.tokenized_sentences)} subtitles "
+            f"with a total of {self.number_of_tokens_found} tokens"
         )
         print(
-            f"Found {self.count_tokens_above_minimum_length} tokens longer than the minimum token lengh ({config.minimum_token_length})"
+            f"Found {self.count_tokens_above_minimum_length} "
+            f"tokens longer than the minimum token "
+            f"length ({config.minimum_token_length})"
         )
         # debug
         # print(f"Number of sentences found: {len(self.tokenized_sentences)}")
@@ -239,6 +291,7 @@ class LexSrt(BaseModel):
     # noinspection PyTypeChecker
     def extract_lexemes_based_on_tokens(self):
         logger.debug("extract_lexemes_based_on_tokens: running")
+        print("Matching tokes against lexemes in Wikidata")
         if self.tokens_above_minimum_length and not self.lexemes:
             # try deduplicating
             for token in list(set(self.tokens_above_minimum_length)):
@@ -271,9 +324,12 @@ class LexSrt(BaseModel):
     def print_all_unique_wbi_lexemes(self):
         logger.debug("print_all_unique_wbi_lexemes: running")
         for wbi_lexeme in self.unique_wbi_lexemes:
+            srt_lexeme = SrtLexemeEntity(
+                lexeme=wbi_lexeme, language_code=self.language_code
+            )
             print(
-                f"{get_cleaned_localized_lemma(lexeme=wbi_lexeme)}: "
-                f"{localized_glosses_as_text(lexeme=wbi_lexeme)}"
+                f"{srt_lexeme.get_cleaned_localized_lemma()}: "
+                f"{srt_lexeme.localized_glosses_as_text()}"
                 f"\n More details: {wbi_lexeme.get_entity_url()}"
             )
 
@@ -291,9 +347,20 @@ class LexSrt(BaseModel):
 
     def print_number_of_unique_lexemes_with_no_senses(self):
         print(
-            f"{self.number_of_lexemes_with_no_senses} lexemes are missing at least one sense"
+            f"{self.number_of_lexemes_with_no_senses} "
+            f"lexemes are missing at least one sense"
         )
 
     def write_to_csv(self):
         if not self.lexeme_dataframe.empty:
             self.lexeme_dataframe.to_csv("lexemes.csv")
+        if not self.match_error_dataframe.empty:
+            self.lexeme_dataframe.to_csv("match_errors.csv")
+
+    @property
+    def tokens_with_match_error(self) -> List[LexSrtToken]:
+        tokens = []
+        for token in self.tokens_above_minimum_length:
+            if token.match_error:
+                tokens.append(token)
+        return tokens

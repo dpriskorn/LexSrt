@@ -1,7 +1,8 @@
 """
 Copyright 2023 Dennis Priskorn
 start time 0210
-The purpose of this script is to get all the senses for all the words in a SRT-file from Wikidata
+The purpose of this script is to get all the
+senses for all the words in a SRT-file from Wikidata
 Limitations:
 * hardcoded to english
 * if multiple LIDs are returned from WDQS skip them

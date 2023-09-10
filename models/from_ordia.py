@@ -1,18 +1,18 @@
-"""These are from https://github.com/fnielsen/ordia/blob/db4af5029044f5010204ec6516549ccb318dc259/ordia/query.py
+"""These are from
+https://github.com/fnielsen/ordia/blob/db4af5029044f5010204ec6516549ccb318dc259/ordia/query.py
 Author: Finn Nielsen
 License: Apache 2.0, see https://github.com/fnielsen/ordia/blob/master/LICENSE
 
-The code was improved to use WikibaseIntegrator for better error handling and standardization"""
+The code was improved to use WikibaseIntegrator for
+better error handling and standardization"""
 import logging
-from typing import Any
+from functools import lru_cache
+from typing import Optional
 
 import requests
-from functools import lru_cache
-
 from spacy.tokens import Token
-from wikibaseintegrator.wbi_helpers import execute_sparql_query
+from wikibaseintegrator.wbi_helpers import execute_sparql_query  # type: ignore
 
-import config
 from models.exceptions import MissingInformationError
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ def escape_string(string):
     Returns
     -------
     escaped_string : str
-        Excaped string.
+        Escaped string.
 
     Examples
     --------
@@ -87,7 +87,9 @@ def iso639_to_q(iso639):
     params = {"query": query, "format": "json"}
     response = requests.get(
         url,
-        params=params,  # headers=HEADERS
+        params=params,  # headers=HEADERS,
+        # Arbitrary set timeout to please bandit
+        timeout=10,
     )
     data = response.json()
 
@@ -100,7 +102,7 @@ def iso639_to_q(iso639):
 
 @lru_cache(maxsize=1048)
 def spacy_token_to_lexemes(
-    token: Token = None,
+    token: Optional[Token] = None,
     lookup_proper_noun_as_noun: bool = False,
     lookup_proper_noun_as_adjective: bool = False,
     overwrite_as_noun: bool = False,
@@ -159,11 +161,13 @@ def spacy_token_to_lexemes(
     if overwrite_as_adjective:
         token.pos_ = "ADJ"
     if token.pos_ in ["PUNCT", "SYM", "X"]:
-        logger.error(f"PoS '{token.pos_}' is a punctation, skipping")
+        logger.error(f"PoS '{token.pos_}' is a punctuation, skipping")
         return []
 
     iso639 = token.lang_
+    logger.info(f"Detected iso639 language: {iso639}")
     language = iso639_to_q(iso639)
+    logger.debug(f"Matched language to the following QID: {language}")
     # if lowercase:
     #     representation = token.norm_.lower()
     # else:
@@ -191,7 +195,7 @@ def spacy_token_to_lexemes(
     )
 
     logger.debug("Looking up in Wikidata")
-    from wikibaseintegrator.wbi_config import config as wbi_config
+    from wikibaseintegrator.wbi_config import config as wbi_config  # type: ignore
 
     wbi_config["USER_AGENT"] = "LexSrt/1.0 (https://www.wikidata.org/wiki/User:So9q)"
     data = execute_sparql_query(query=query)

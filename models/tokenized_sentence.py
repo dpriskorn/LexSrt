@@ -2,8 +2,8 @@ import logging
 from typing import List
 
 from pydantic import BaseModel
-from wikibaseintegrator import WikibaseIntegrator
-from wikibaseintegrator.entities import LexemeEntity
+from wikibaseintegrator import WikibaseIntegrator  # type: ignore
+from wikibaseintegrator.entities import LexemeEntity  # type: ignore
 
 import config
 from models import LexSrtToken
@@ -27,7 +27,10 @@ class TokenizedSentence(BaseModel):
     def __str__(self) -> str:
         sentences = self.sentence.replace("\n", "")
         if self.tokens:
-            return f"Sentence '{sentences}' with {self.number_of_tokens} tokens: {', '.join(self.get_tokens_as_text)}"
+            return (
+                f"Sentence '{sentences}' with {self.number_of_tokens} "
+                f"tokens: {', '.join(self.get_tokens_as_text)}"
+            )
         else:
             return f"Sentence '{sentences}' with no tokens detected"
 
