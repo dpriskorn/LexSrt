@@ -27,13 +27,13 @@ You can fiddle with the configuration options in `config.py`
 matches:
 ![image](https://github.com/dpriskorn/LexSrt/assets/68460690/78408744-0827-426c-837a-3e6fc1960336)
 match errors:
-![image](https://github.com/dpriskorn/LexSrt/assets/68460690/5e704b47-3cc9-453d-8765-e8154fda360f)
+![image](https://github.com/dpriskorn/LexSrt/assets/68460690/3c8b2f1f-645a-4502-8486-c5a9a0012d3c)
 
 ## Shrek norwegian limit 9
 matches:
 ![image](https://github.com/dpriskorn/LexSrt/assets/68460690/3679cd0f-b6f9-4436-9ff1-195a80b75fc7)
 match errors:
-![image](https://github.com/dpriskorn/LexSrt/assets/68460690/afbc19fe-3d08-49ef-9bcd-e3ae3b1aea5f)
+![image](https://github.com/dpriskorn/LexSrt/assets/68460690/5e704b47-3cc9-453d-8765-e8154fda360f)
 
 # License
 GPLv3+ with the exeption of the code borrowed from Ordia, see the licens in the file.
