@@ -8,7 +8,7 @@ The script encourages the user to contribute to Wikidata if
 senses are completely missing on the matched lexemes.
 
 # Limitations
-* Hard-coded to English
+* Only languages with a spaCy model are currently supported
 * No API
 
 # Installation
