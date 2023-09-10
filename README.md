@@ -20,14 +20,16 @@ Clone the repository.
 You can fiddle with the configuration options in `config.py`
 
 # Examples
-## Ice Age with limit 8
+## Ice Age with english limit 8
 ![image](https://github.com/dpriskorn/LexSrt/assets/68460690/f07d14a4-45cb-45cb-a617-889604652639)
 
-## Life of Brian limit 11
+## Life of Brian english limit 11
 matches:
 ![image](https://github.com/dpriskorn/LexSrt/assets/68460690/78408744-0827-426c-837a-3e6fc1960336)
 match errors:
 ![image](https://github.com/dpriskorn/LexSrt/assets/68460690/3c8b2f1f-645a-4502-8486-c5a9a0012d3c)
+
+## Shrek norwegian limit 9
 
 # License
 GPLv3+ with the exeption of the code borrowed from Ordia, see the licens in the file.
