@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from spacy.tokens import Token
 from wikibaseintegrator.entities import LexemeEntity  # type: ignore
 
-from models.from_ordia import spacy_token_to_lexemes
+from models.from_ordia import spacy_token_to_forms
 
 logger = logging.getLogger(__name__)
 
@@ -63,12 +63,12 @@ class LexSrtToken(BaseModel):
     def match(self, token: Token) -> bool:
         logger.info(
             f"Trying to match '{token.text}' using the spaCy lexical category "
-            f"{token.pos_} with lexemes in Wikidata"
+            f"{token.pos_} with lexeme forms in Wikidata"
         )
-        lexemes = spacy_token_to_lexemes(token=token)
-        if lexemes:
-            logger.info(f"Match(es) found {lexemes}")
-            self.forms.extend(lexemes)
+        forms = spacy_token_to_forms(token=token)
+        if forms:
+            logger.info(f"Match(es) found {forms}")
+            self.forms.extend(forms)
             return True
         else:
             return False
@@ -77,7 +77,7 @@ class LexSrtToken(BaseModel):
         logger.info(
             f"Trying to match '{token.text}' in as noun with lexemes " f"in Wikidata"
         )
-        lexemes = spacy_token_to_lexemes(token=token, lookup_proper_noun_as_noun=True)
+        lexemes = spacy_token_to_forms(token=token, lookup_proper_noun_as_noun=True)
         if lexemes:
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to noun"
@@ -91,7 +91,7 @@ class LexSrtToken(BaseModel):
         logger.info(
             f"Trying to match '{token.text}' as adjective with lexemes " f"in Wikidata"
         )
-        lexemes = spacy_token_to_lexemes(
+        lexemes = spacy_token_to_forms(
             token=token, lookup_proper_noun_as_adjective=True
         )
         if lexemes:
@@ -105,7 +105,7 @@ class LexSrtToken(BaseModel):
         logger.info(
             f"Trying to match '{token.text}' as noun with lexemes " f"in Wikidata"
         )
-        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_noun=True)
+        lexemes = spacy_token_to_forms(token=token, overwrite_as_noun=True)
         if lexemes:
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to noun"
@@ -119,7 +119,7 @@ class LexSrtToken(BaseModel):
         logger.info(
             f"Trying to match '{token.text}' as verb with lexemes " f"in Wikidata"
         )
-        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_verb=True)
+        lexemes = spacy_token_to_forms(token=token, overwrite_as_verb=True)
         if lexemes:
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to verb"
@@ -133,7 +133,7 @@ class LexSrtToken(BaseModel):
         logger.info(
             f"Trying to match '{token.text}' as adjective with lexemes " f"in Wikidata"
         )
-        lexemes = spacy_token_to_lexemes(token=token, overwrite_as_adjective=True)
+        lexemes = spacy_token_to_forms(token=token, overwrite_as_adjective=True)
         if lexemes:
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to verb"
