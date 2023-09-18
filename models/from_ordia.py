@@ -163,6 +163,13 @@ def spacy_token_to_lexemes(
     if token.pos_ in ["PUNCT", "SYM", "X"]:
         logger.error(f"PoS '{token.pos_}' is a punctuation, skipping")
         return []
+    # Cleaning
+    if '"' in token.norm_:
+        token.norm_ = token.norm_.replace('"', "")
+    if "-" in token.norm_:
+        token.norm_ = token.norm_.replace("-", "")
+    # logger.info(f"token.norm_: {token.norm_}")
+    # exit()
 
     iso639 = token.lang_
     logger.info(f"Detected iso639 language: {iso639}")
