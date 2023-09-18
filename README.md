@@ -19,9 +19,25 @@ These models are recommended over the standard spaCy ones in https://spacy.io/mo
 * sv: https://github.com/Kungbib/swedish-spacy
 
 # Use
-`python main.py -i path-to-srt.srt`
+## CLI
+`python cli.py -i path-to-srt.srt`
 
 You can fiddle with the configuration options in `config.py`
+
+## API
+An API using fastapi has been implemented.
+
+It supports 2 fields sent via POST:
+* spacy_model
+* sentence
+
+Start it in debug mode with:
+* `uvicorn api:app --reload`
+
+Test it with:
+* `$ curl -X POST -H "Content-Type: application/json" -d '{"spacy_model": "en_core_web_sm", "sentence": "This is a test sentence."}' http://localhost:8000/process_sentence`
+
+  
 
 # Examples
 ## Ice Age with english limit 8
