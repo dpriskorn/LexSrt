@@ -91,7 +91,12 @@ class LexSrt(BaseModel):
         parser = ArgumentParser(
             description="Read and process SRT files from the command line."
         )
-        parser.add_argument("--file-encoding", required=False, help="Force a certain file encoding of the SRT file, e.g. 'latin-1'", default="utf-8")
+        parser.add_argument(
+            "--file-encoding",
+            required=False,
+            help="Force a certain file encoding of the SRT file, e.g. 'latin-1'",
+            default="utf-8",
+        )
         parser.add_argument("-i", "--input", required=True, help="Input SRT file name")
         parser.add_argument(
             "-l", "--lang", required=True, help="Wikimedia supported language code"
