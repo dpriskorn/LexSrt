@@ -19,7 +19,7 @@ async def process_sentence(sentence_request: SentenceRequest):
         srt_sentence = SrtSentence(
             sentence=sentence_request.sentence, spacy_model=sentence_request.spacy_model
         )
-        srt_sentence.clean_get_tokens_and_extract_lexemes()
+        srt_sentence.clean_get_tokens_and_extract_forms()
         if srt_sentence.lexemes:
             return srt_sentence.lexemes
         else:

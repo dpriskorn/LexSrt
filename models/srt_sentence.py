@@ -94,7 +94,7 @@ class SrtSentence(BaseModel):
         filtered_tokens = self.__filter_tokens__(tokens)
         self.tokens = self.convert_to_lexsrttoken(filtered_tokens)
 
-    def __extract_lexemes_based_on_tokens__(self):
+    def __match_forms_based_on_tokens__(self):
         logger.debug("extract_lexemes_based_on_tokens: running")
         print("Matching tokes against lexemes in Wikidata")
         # try deduplicating first
@@ -104,11 +104,11 @@ class SrtSentence(BaseModel):
                 self.lexemes.extend(token.lexemes)
         print(f"Found {len(self.lexemes)} lexemes based on the tokens")
 
-    def clean_get_tokens_and_extract_lexemes(self):
+    def clean_get_tokens_and_extract_forms(self):
         """Helper method"""
         self.__extract_clean_sentence__()
         self.__get_spacy_tokens__()
-        self.__extract_lexemes_based_on_tokens__()
+        self.__match_forms_based_on_tokens__()
 
     def __filter_tokens__(self, tokens):
         """Filter the tokens to remove junk like emails"""
