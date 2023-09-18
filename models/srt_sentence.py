@@ -99,7 +99,7 @@ class SrtSentence(BaseModel):
         print("Matching tokes against lexemes in Wikidata")
         # try deduplicating first
         for token in list(set(self.tokens)):
-            token.convert_token_to_lexemes()
+            token.convert_token_to_forms()
             if token.lexemes:
                 self.lexemes.extend(token.lexemes)
         print(f"Found {len(self.lexemes)} lexemes based on the tokens")

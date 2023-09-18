@@ -294,7 +294,7 @@ class LexSrt(BaseModel):
         if self.tokens_above_minimum_length and not self.forms:
             # try deduplicating
             for token in list(set(self.tokens_above_minimum_length)):
-                token.convert_token_to_lexemes()
+                token.convert_token_to_forms()
                 if token.forms:
                     self.forms.extend(token.forms)
         print(f"Found {len(self.forms)} forms based on the tokens")
