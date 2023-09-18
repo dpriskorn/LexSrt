@@ -101,7 +101,7 @@ def iso639_to_q(iso639):
 
 
 @lru_cache(maxsize=1048)
-def spacy_token_to_lexemes(
+def spacy_token_to_forms(
     token: Optional[Token] = None,
     lookup_proper_noun_as_noun: bool = False,
     lookup_proper_noun_as_adjective: bool = False,
@@ -127,7 +127,7 @@ def spacy_token_to_lexemes(
     >>> setattr(token, 'lang_', 'da')
     >>> setattr(token, 'norm_', 'biler')
     >>> setattr(token, 'pos_', 'NOUN')
-    >>> spacy_token_to_lexemes(token)
+    >>> spacy_token_to_forms(token)
     ['L36385']
 
     """
