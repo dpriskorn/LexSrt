@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class LexSrtToken(BaseModel):
     spacy_token: Token
-    forms: List[LexemeEntity] = list()
+    forms: List[str] = list()
     match_error: bool = False
 
     class Config:

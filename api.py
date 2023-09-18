@@ -20,8 +20,8 @@ async def process_sentence(sentence_request: SentenceRequest):
             sentence=sentence_request.sentence, spacy_model=sentence_request.spacy_model
         )
         srt_sentence.clean_get_tokens_and_extract_forms()
-        if srt_sentence.lexemes:
-            return srt_sentence.lexemes
+        if srt_sentence.forms:
+            return srt_sentence.forms
         else:
             raise HTTPException(status_code=400, detail="Error: No lexemes found")
     except Exception as e:

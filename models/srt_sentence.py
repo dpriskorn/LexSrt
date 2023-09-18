@@ -25,8 +25,8 @@ class SrtSentence(BaseModel):
     sentence: str = ""
     cleaned_sentence: str = ""
     tokens: List[LexSrtToken] = list()
-    lexemes: List[LexemeEntity] = list()
-    wbi: WikibaseIntegrator = WikibaseIntegrator()
+    forms: List[str] = list()
+    # wbi: WikibaseIntegrator = WikibaseIntegrator()
     spacy_model: str = ""
 
     class Config:
@@ -100,9 +100,9 @@ class SrtSentence(BaseModel):
         # try deduplicating first
         for token in list(set(self.tokens)):
             token.convert_token_to_forms()
-            if token.lexemes:
-                self.lexemes.extend(token.lexemes)
-        print(f"Found {len(self.lexemes)} lexemes based on the tokens")
+            if token.forms:
+                self.forms.extend(token.forms)
+        print(f"Found {len(self.forms)} lexemes based on the tokens")
 
     def clean_get_tokens_and_extract_forms(self):
         """Helper method"""
