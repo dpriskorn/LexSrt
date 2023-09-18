@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict
+from typing import List
 
 import spacy
 from bs4 import BeautifulSoup
@@ -9,6 +9,7 @@ from spacy.tokens import Token
 
 import config
 from models import LexSrtToken
+from models.token_response import TokenResponse
 
 logger = logging.getLogger(__name__)
 
@@ -113,8 +114,5 @@ class SrtSentence(BaseModel):
         return [LexSrtToken(spacy_token=token) for token in tokens]
 
     @property
-    def get_dictionaries(self) -> List[Dict[str, str]]:
-        dictionaries = [token.get_as_dictionary for token in self.tokens]
-        print(dictionaries)
-        #exit()
-        return [token.get_as_dictionary for token in self.tokens]
+    def get_token_responses(self) -> List[TokenResponse]:
+        return [token.get_as_response for token in self.tokens]

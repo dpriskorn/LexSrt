@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from spacy.tokens import Token
 
 from models.from_ordia import spacy_token_to_forms
+from models.token_response import TokenResponse
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,8 @@ class LexSrtToken(BaseModel):
     def __eq__(self, other):
         """Equal is when the text and PoS from spaCy is the same"""
         return (
-                self.text == other.text and self.spacy_lexical_category == other.spacy_lexical_category
+            self.text == other.text
+            and self.spacy_lexical_category == other.spacy_lexical_category
         )
 
     def __hash__(self):
@@ -144,10 +146,10 @@ class LexSrtToken(BaseModel):
             return False
 
     @property
-    def get_as_dictionary(self):
-        return {
-            "token": self.text,
-            "spacy_pos": str(self.spacy_lexical_category),
-            "matched_forms": self.forms # this is a list because
-                                        # there might be multiple matches
-        }
+    def get_as_response(self) -> TokenResponse:
+        return TokenResponse(
+            token=self.text,
+            spacy_pos=self.spacy_lexical_category,
+            matched_forms=self.forms  # this is a list because
+            # there might be multiple matches
+        )
