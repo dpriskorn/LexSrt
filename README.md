@@ -43,7 +43,7 @@ match errors:
 GPLv3+ with the exeption of the code borrowed from Ordia, see the licens in the file.
 
 # Thanks
-Big thanks to Finn Nielsen for writing the spaCy->lexeme function. 
+Big thanks to [Finn Nielsen](https://www.wikidata.org/wiki/Q96296336) for writing the spaCy->lexeme function. 
 I improved it a bit for my purposes to get what I wanted.
 
 # What I learned
