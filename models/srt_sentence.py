@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Dict
 
 import spacy
 from bs4 import BeautifulSoup
@@ -23,8 +23,6 @@ class SrtSentence(BaseModel):
     sentence: str = ""
     cleaned_sentence: str = ""
     tokens: List[LexSrtToken] = list()
-    forms: List[str] = list()
-    # wbi: WikibaseIntegrator = WikibaseIntegrator()
     spacy_model: str = ""
 
     class Config:
@@ -93,14 +91,7 @@ class SrtSentence(BaseModel):
         self.tokens = self.convert_to_lexsrttoken(filtered_tokens)
 
     def __match_forms_based_on_tokens__(self):
-        logger.debug("extract_lexemes_based_on_tokens: running")
-        print("Matching tokes against lexemes in Wikidata")
-        # try deduplicating first
-        for token in list(set(self.tokens)):
-            token.convert_token_to_forms()
-            if token.forms:
-                self.forms.extend(token.forms)
-        print(f"Found {len(self.forms)} lexemes based on the tokens")
+        [token.match_against_forms_in_wikidata() for token in self.tokens]
 
     def clean_get_tokens_and_extract_forms(self):
         """Helper method"""
@@ -120,3 +111,10 @@ class SrtSentence(BaseModel):
     @staticmethod
     def convert_to_lexsrttoken(tokens: List[Token]) -> List[LexSrtToken]:
         return [LexSrtToken(spacy_token=token) for token in tokens]
+
+    @property
+    def get_dictionaries(self) -> List[Dict[str, str]]:
+        dictionaries = [token.get_as_dictionary for token in self.tokens]
+        print(dictionaries)
+        #exit()
+        return [token.get_as_dictionary for token in self.tokens]

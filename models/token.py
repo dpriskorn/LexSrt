@@ -21,23 +21,25 @@ class LexSrtToken(BaseModel):
     def __eq__(self, other):
         """Equal is when the text and PoS from spaCy is the same"""
         return (
-            self.text == other.text and self.lexical_category == other.lexical_category
+                self.text == other.text and self.spacy_lexical_category == other.spacy_lexical_category
         )
 
     def __hash__(self):
-        hash_ = hash(str(self.text + self.lexical_category))
+        hash_ = hash(str(self.text + self.spacy_lexical_category))
         # print(hash_)
         return hash_
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.spacy_token.text
 
     @property
-    def lexical_category(self):
+    def spacy_lexical_category(self):
         return self.spacy_token.pos_
 
-    def convert_token_to_forms(self) -> None:
+    def match_against_forms_in_wikidata(self) -> None:
+        logger.debug("match_against_forms_in_wikidata: running")
+        print("Matching tokes against lexeme forms in Wikidata")
         match = self.match(token=self.spacy_token)
         if not match:
             match = self.match_proper_noun_as_noun(token=self.spacy_token)
@@ -58,6 +60,7 @@ class LexSrtToken(BaseModel):
                 f"MatchError: See https://ordia.toolforge.org/search?q={quoted_token_representation}"
             )
             self.match_error = True
+        print(f"Found {len(self.forms)} lexemes based on the tokens")
 
     def match(self, token: Token) -> bool:
         logger.info(
@@ -139,3 +142,12 @@ class LexSrtToken(BaseModel):
             return True
         else:
             return False
+
+    @property
+    def get_as_dictionary(self):
+        return {
+            "token": self.text,
+            "spacy_pos": str(self.spacy_lexical_category),
+            "matched_forms": self.forms # this is a list because
+                                        # there might be multiple matches
+        }
