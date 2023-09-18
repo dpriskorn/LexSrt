@@ -193,7 +193,7 @@ def spacy_token_to_lexemes(
            ?lexeme dct:language wd:{language} ;
             wikibase:lexicalCategory / wdt:P279* wd:{lexical_category} ;
             ontolex:lexicalForm ?form. 
-            ?form ontolex:representation {representation}"@{iso639} .
+            ?form ontolex:representation "{representation}"@{iso639} .
     }}""".format(
         language=language,
         lexical_category=lexical_category,
@@ -208,7 +208,7 @@ def spacy_token_to_lexemes(
     data = execute_sparql_query(query=query)
     bindings = data["results"]["bindings"]
     if bindings:
-        forms = [binding["lexeme"]["value"][31:] for binding in bindings]
+        forms = [binding["form"]["value"][31:] for binding in bindings]
         return forms
     else:
         return []

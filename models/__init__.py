@@ -44,7 +44,7 @@ class LexSrt(BaseModel):
     srt_contents: List[str] = list()
     tokenized_sentences: List[TokenizedSentence] = list()
     filename: str = ""
-    lexemes: List[str] = list()
+    forms: List[str] = list()
     tokens_above_minimum_length: List[LexSrtToken] = list()
     unique_wbi_lexemes: List[LexemeEntity] = list()
     lexeme_dataframe: DataFrame = DataFrame()
@@ -285,14 +285,14 @@ class LexSrt(BaseModel):
     # noinspection PyTypeChecker
     def extract_lexemes_based_on_tokens(self):
         logger.debug("extract_lexemes_based_on_tokens: running")
-        print("Matching tokes against lexemes in Wikidata")
-        if self.tokens_above_minimum_length and not self.lexemes:
+        print("Matching tokes against lexeme forms in Wikidata")
+        if self.tokens_above_minimum_length and not self.forms:
             # try deduplicating
             for token in list(set(self.tokens_above_minimum_length)):
-                token.convert_token_to_lexeme()
-                if token.lexemes:
-                    self.lexemes.extend(token.lexemes)
-        print(f"Found {len(self.lexemes)} lexemes based on the tokens")
+                token.convert_token_to_lexemes()
+                if token.forms:
+                    self.forms.extend(token.forms)
+        print(f"Found {len(self.forms)} forms based on the tokens")
 
     # def get_lexemes_and_print_senses(self):
     #     logger.debug("get_lexeme_ids: running")
@@ -309,10 +309,10 @@ class LexSrt(BaseModel):
 
     def get_unique_wbi_lexemes(self):
         logger.debug("get_unique_wbi_lexemes: running")
-        unique_lexemes = list(set(self.lexemes))
-        print(f"Found {len(unique_lexemes)} unique lexemes")
-        for lexeme in unique_lexemes:
-            wbi_lexeme = wbi.lexeme.get(entity_id=lexeme)
+        unique_forms = list(set(self.forms))
+        print(f"Found {len(unique_forms)} unique lexemes")
+        for form in unique_forms:
+            wbi_lexeme = wbi.lexeme.get(entity_id=form.split("-")[0])
             self.unique_wbi_lexemes.append(wbi_lexeme)
 
     def print_all_unique_wbi_lexemes(self):
