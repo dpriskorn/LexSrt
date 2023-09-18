@@ -7,20 +7,23 @@ Wikidata based on the detected position of speech and token representation.
 The script encourages the user to contribute to Wikidata if 
 senses are completely missing on the matched lexemes.
 
+# Features
+* API to match a sentence to lexeme forms
+* CLI to analyze a SRT-file and get an overview of all lexemes an their senses 
+
 # Limitations
 * Only languages with a spaCy model are currently supported
-* No API
 
 # Installation
 Clone the repository.
 
 ## Recommended models
 These models are recommended over the standard spaCy ones in https://spacy.io/models
-* sv: https://github.com/Kungbib/swedish-spacy
+* sv: https://github.com/Kungbib/swedish-spacy <- Note 800 MB download
 
 # Use
 ## CLI
-`python cli.py -i path-to-srt.srt`
+`python cli.py -i path-to-srt.srt --lang en --spacy_model en_core_web_sm`
 
 You can fiddle with the configuration options in `config.py`
 
@@ -37,6 +40,53 @@ Start it in debug mode with:
 Test it with:
 * `$ curl -X POST -H "Content-Type: application/json" -d '{"spacy_model": "en_core_web_sm", "sentence": "This is a test sentence."}' http://localhost:8000/process_sentence`
 
+It should output something like:
+```
+{
+  "data": [
+    {
+      "token": "This",
+      "spacy_pos": "PRON",
+      "matched_forms": [
+        "L643260-F1"
+      ]
+    },
+    {
+      "token": "is",
+      "spacy_pos": "AUX",
+      "matched_forms": [
+        "L1883-F4"
+      ]
+    },
+    {
+      "token": "a",
+      "spacy_pos": "DET",
+      "matched_forms": [
+        "L2767-F1"
+      ]
+    },
+    {
+      "token": "test",
+      "spacy_pos": "NOUN",
+      "matched_forms": [
+        "L220909-F1"
+      ]
+    },
+    {
+      "token": "sentence",
+      "spacy_pos": "NOUN",
+      "matched_forms": [
+        "L6117-F1"
+      ]
+    },
+    {
+      "token": ".",
+      "spacy_pos": "ADJ",
+      "matched_forms": []
+    }
+  ]
+}
+```
   
 
 # Examples
