@@ -192,7 +192,7 @@ def spacy_token_to_lexemes(
        SELECT DISTINCT ?form {{
            ?lexeme dct:language wd:{language} ;
             wikibase:lexicalCategory / wdt:P279* wd:{lexical_category} ;
-            ontolex:lexicalForm ?form. 
+            ontolex:lexicalForm ?form.
             ?form ontolex:representation "{representation}"@{iso639} .
     }}""".format(
         language=language,
