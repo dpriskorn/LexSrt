@@ -28,7 +28,16 @@ You can fiddle with the configuration options in `config.py`
 An API using fastapi has been implemented.
 
 It supports 2 fields sent via POST:
+* spacy_model
+* sentence
 
+Start it in debug mode with:
+* `uvicorn api:app --reload`
+
+Test it with:
+* `$ curl -X POST -H "Content-Type: application/json" -d '{"spacy_model": "en_core_web_sm", "sentence": "This is a test sentence."}' http://localhost:8000/process_sentence`
+
+  
 
 # Examples
 ## Ice Age with english limit 8
