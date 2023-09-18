@@ -6,8 +6,6 @@ from bs4 import BeautifulSoup
 from email_validator import EmailNotValidError, validate_email
 from pydantic import BaseModel
 from spacy.tokens import Token
-from wikibaseintegrator import WikibaseIntegrator  # type: ignore
-from wikibaseintegrator.entities import LexemeEntity  # type: ignore
 
 import config
 from models import LexSrtToken

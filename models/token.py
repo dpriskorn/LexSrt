@@ -4,7 +4,6 @@ from typing import List
 
 from pydantic import BaseModel
 from spacy.tokens import Token
-from wikibaseintegrator.entities import LexemeEntity  # type: ignore
 
 from models.from_ordia import spacy_token_to_forms
 
@@ -91,9 +90,7 @@ class LexSrtToken(BaseModel):
         logger.info(
             f"Trying to match '{token.text}' as adjective with lexemes " f"in Wikidata"
         )
-        forms = spacy_token_to_forms(
-            token=token, lookup_proper_noun_as_adjective=True
-        )
+        forms = spacy_token_to_forms(token=token, lookup_proper_noun_as_adjective=True)
         if forms:
             logger.info(f"Match(es) found {forms} after lowercasing")
             self.forms.extend(forms)
