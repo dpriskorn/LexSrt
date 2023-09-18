@@ -1,15 +1,19 @@
 # LexSrt
-The purpose of this script is to get all the senses for all the words in a SRT-file from Wikidata
+This tool helps language mentors overview all lexeme forms found in sentences or SRT-files.
 
 It uses SpaCy to tokenize each subtitle in the srt and looks up the corresponding lexeme in 
 Wikidata based on the detected position of speech and token representation.
 
-The script encourages the user to contribute to Wikidata if 
+The CLI script encourages the user to contribute to Wikidata if 
 senses are completely missing on the matched lexemes.
+
+The API does not check if senses exists in Wikidata currently and 
+simply does the cleaning and matching and output the result.
 
 # Features
 * API to match a sentence to lexeme forms
-* CLI to analyze a SRT-file and get an overview of all lexemes an their senses 
+* CLI to analyze a SRT-file and get an overview
+  of all lexemes an their senses and get 2 csv output files with details
 
 # Limitations
 * Only languages with a spaCy model are currently supported
@@ -119,3 +123,4 @@ I improved it a bit for my purposes to get what I wanted.
 * WBI is still lacking convenince methods I want so I'll
 propose them to be included upstream to make life easier for others.
 * Pydantic and black goes a long way, I don't really need all the other linting mypy stuff for whipping up working code like this in a few hours. Stability is good enough for me with those two and the inspection in PyCharm.
+* FastAPI is super duper nice and chatgpt supports it well so using it is a breeze.
