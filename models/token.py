@@ -38,7 +38,7 @@ class LexSrtToken(BaseModel):
     def lexical_category(self):
         return self.spacy_token.pos_
 
-    def convert_token_to_lexeme(self) -> None:
+    def convert_token_to_lexemes(self) -> None:
         match = self.match(token=self.spacy_token)
         if not match:
             match = self.match_proper_noun_as_noun(token=self.spacy_token)
