@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class LexSrtToken(BaseModel):
     spacy_token: Token
-    lexemes: List[LexemeEntity] = list()
+    forms: List[LexemeEntity] = list()
     match_error: bool = False
 
     class Config:
@@ -68,7 +68,7 @@ class LexSrtToken(BaseModel):
         lexemes = spacy_token_to_lexemes(token=token)
         if lexemes:
             logger.info(f"Match(es) found {lexemes}")
-            self.lexemes.extend(lexemes)
+            self.forms.extend(lexemes)
             return True
         else:
             return False
@@ -82,7 +82,7 @@ class LexSrtToken(BaseModel):
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to noun"
             )
-            self.lexemes.extend(lexemes)
+            self.forms.extend(lexemes)
             return True
         else:
             return False
@@ -96,7 +96,7 @@ class LexSrtToken(BaseModel):
         )
         if lexemes:
             logger.info(f"Match(es) found {lexemes} after lowercasing")
-            self.lexemes.extend(lexemes)
+            self.forms.extend(lexemes)
             return True
         else:
             return False
@@ -110,7 +110,7 @@ class LexSrtToken(BaseModel):
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to noun"
             )
-            self.lexemes.extend(lexemes)
+            self.forms.extend(lexemes)
             return True
         else:
             return False
@@ -124,7 +124,7 @@ class LexSrtToken(BaseModel):
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to verb"
             )
-            self.lexemes.extend(lexemes)
+            self.forms.extend(lexemes)
             return True
         else:
             return False
@@ -138,7 +138,7 @@ class LexSrtToken(BaseModel):
             logger.info(
                 f"Match(es) found {lexemes} after forcing the lexical category to verb"
             )
-            self.lexemes.extend(lexemes)
+            self.forms.extend(lexemes)
             return True
         else:
             return False

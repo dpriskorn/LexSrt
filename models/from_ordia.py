@@ -189,11 +189,11 @@ def spacy_token_to_lexemes(
         f"'{lexical_category}' with Wikidata"
     )
     query = """
-       SELECT DISTINCT ?lexeme {{
+       SELECT DISTINCT ?form {{
            ?lexeme dct:language wd:{language} ;
             wikibase:lexicalCategory / wdt:P279* wd:{lexical_category} ;
-            ontolex:lexicalForm / ontolex:representation
-                "{representation}"@{iso639} .
+            ontolex:lexicalForm ?form. 
+            ?form ontolex:representation "{representation}"@{iso639} .
     }}""".format(
         language=language,
         lexical_category=lexical_category,
@@ -208,7 +208,7 @@ def spacy_token_to_lexemes(
     data = execute_sparql_query(query=query)
     bindings = data["results"]["bindings"]
     if bindings:
-        lexemes = [binding["lexeme"]["value"][31:] for binding in bindings]
-        return lexemes
+        forms = [binding["form"]["value"][31:] for binding in bindings]
+        return forms
     else:
         return []
