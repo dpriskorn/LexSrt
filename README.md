@@ -19,7 +19,15 @@ simply does the cleaning and matching and output the result.
 * Only languages with a spaCy model are currently supported
 
 # Installation
-Clone the repository.
+1. Clone the repository.
+2. Install dependencies using Poetry:
+```sh
+poetry install
+```
+3. Install a language model for spaCy, for example:
+```sh
+poetry run python3 -m spacy download en_core_web_sm
+```
 
 ## Recommended models
 These models are recommended over the standard spaCy ones in https://spacy.io/models
@@ -27,25 +35,32 @@ These models are recommended over the standard spaCy ones in https://spacy.io/mo
 
 # Use
 ## CLI
-`python cli.py -i path-to-srt.srt --lang en --spacy_model en_core_web_sm`
+```sh
+python cli.py -i path-to-srt.srt --lang en --spacy_model en_core_web_sm
+```
 
 You can fiddle with the configuration options in `config.py`
 
 ## API
 An API using fastapi has been implemented.
 
-It supports 2 fields sent via POST:
+It supports 2 fields sent via a HTTP POST request:
 * spacy_model
 * sentence
 
-Start it in debug mode with:
-* `uvicorn api:app --reload`
+After installing Uvicorn, you can start the API in debug mode:
+```sh
+uvicorn api:app --reload
+```
 
 Test it with:
-* `$ curl -X POST -H "Content-Type: application/json" -d '{"spacy_model": "en_core_web_sm", "sentence": "This is a test sentence."}' http://localhost:8000/process_sentence`
+```sh
+curl -X POST -H "Content-Type: application/json" http://localhost:8000/process_sentence \
+     -d '{"spacy_model": "en_core_web_sm", "sentence": "This is a test sentence."}' 
+```
 
 It should output something like:
-```
+```json
 {
   "data": [
     {
